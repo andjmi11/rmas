@@ -13,6 +13,65 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Izaberite vašu profilnu sliku!"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:padding="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="0dp"
+                android:padding="20dp">
+
+                <ImageView
+                    android:id="@+id/profileImg"
+                    android:layout_width="300dp"
+                    android:layout_height="300dp"
+                    android:layout_marginTop="50dp"
+                    tools:srcCompat="@tools:sample/avatars"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="0dp"
+                    android:padding="10dp">
+                <Button
+                    android:layout_width="150dp"
+                    android:layout_height="70dp"
+                    android:layout_marginTop="30dp"
+                    android:layout_marginRight="5dp"
+                    android:text="Kamera"
+                    android:id="@+id/btnCamera"
+                    android:textSize="18dp"
+                    app:cornerRadius="30dp"/>
+
+                <Button
+                    android:layout_width="150dp"
+                    android:layout_height="70dp"
+                    android:layout_marginTop="30dp"
+                    android:layout_marginLeft="5dp"
+                    android:text="Galerija"
+                    android:id="@+id/btnGallery"
+                    android:textSize="18dp"
+                    app:cornerRadius="30dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+        </FrameLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -24,7 +83,7 @@
                 android:layout_width="350dp"
                 android:layout_height="60dp"
                 android:id="@+id/signup_email"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="0dp"
                 android:background="@drawable/border"
                 android:padding="8dp"
                 android:hint="Korisničko ime"
