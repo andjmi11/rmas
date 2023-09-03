@@ -27,6 +27,9 @@ import elfak.mosis.rmas18247.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var firebaseAuth: FirebaseAuth
+
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
