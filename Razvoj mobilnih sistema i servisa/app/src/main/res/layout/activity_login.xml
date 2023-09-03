@@ -45,7 +45,8 @@
                 android:padding="8dp"
                 android:hint="Lozinka"
                 android:drawableLeft="@drawable/baseline_lock_24"
-                android:drawablePadding="8dp"/>
+                android:drawablePadding="8dp"
+                android:inputType="textPassword"/>
 
 
             <Button

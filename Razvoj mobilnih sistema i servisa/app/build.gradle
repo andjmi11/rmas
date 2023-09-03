@@ -57,4 +57,7 @@ dependencies {
 
     implementation 'com.karumi:dexter:6.2.2'
     implementation("io.coil-kt:coil:1.1.1")
+
+    implementation 'org.osmdroid:osmdroid-android:6.1.13'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
 }

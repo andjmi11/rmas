@@ -4,9 +4,11 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -41,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         getData()
     }
 
+
     private fun getData() {
         val currentUser = firebaseAuth.currentUser
 
@@ -61,7 +64,10 @@ class MainActivity : AppCompatActivity() {
                                 val profileImageUriString = user.imgUrl
 
                                 val profileImageUri = Uri.parse(profileImageUriString)
-
+                                if(profileImageUri == null){
+                                    val message ="Nema uri slike"
+                                    showErrorMessage(message)
+                                }
                                 val emailTextView = findViewById<TextView>(R.id.emailTextView)
                                 val nameTextView = findViewById<TextView>(R.id.nameTextView)
                                 val profileImageView = findViewById<ImageView>(R.id.profileImageView)
@@ -69,6 +75,7 @@ class MainActivity : AppCompatActivity() {
 
                                 emailTextView.text = "Email: $email"
                                 nameTextView.text = "Name: $name"
+
                                 profileImageView.load(profileImageUri) {
                                     crossfade(true)
                                     crossfade(1000)
@@ -81,16 +88,41 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
-
                     override fun onCancelled(error: DatabaseError) {
-                        //greska pri dohvatanju podataka
+                        when (error.code) {
+                            DatabaseError.PERMISSION_DENIED -> {
+                                // Korisnik nema dozvolu za pristup podacima
+                                val message = "Nemate dozvolu za pristup podacima. Molimo, kontaktirajte podršku."
+                                showErrorMessage(message)
+                            }
+                            DatabaseError.NETWORK_ERROR -> {
+                                // Problemi sa internet vezom prilikom dohvatanja podataka
+                                val message = "Problemi sa internet vezom. Proverite svoju internet konekciju i pokušajte ponovo."
+                                showErrorMessage(message)
+                            }
+                            else -> {
+                                // Nepoznata greška
+                                val message = "Došlo je do nepoznate greške. Pokušajte ponovo kasnije."
+                                showErrorMessage(message)
+                            }
+                        }
                     }
+
 
                 })
         }else{
-            //korisnik nije prijavljen
+            Toast.makeText(this, "Current user je null", Toast.LENGTH_SHORT).show()
         }
 
+    }
+
+    private fun showErrorMessage(message: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Greška")
+        builder.setMessage(message)
+        builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     fun clickMenu(view: View) {
@@ -106,8 +138,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun callMap(view: View) {
-        //
+
     }
+
+
+
 
     private fun logoutMenu(mainActivity: MainActivity) {
         val builder = AlertDialog.Builder(mainActivity)
