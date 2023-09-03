@@ -1,25 +1,21 @@
 package elfak.mosis.rmas18247
 
-import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.SharedPreferences
-import android.content.pm.PackageManager
-import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import coil.load
+import coil.transform.CircleCropTransformation
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import elfak.mosis.rmas18247.databinding.ActivityMainBinding
@@ -27,10 +23,10 @@ import elfak.mosis.rmas18247.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerLayout: DrawerLayout
+
+    private  var  firebaseDatabase: FirebaseDatabase?= null
+    private var databaseReference: DatabaseReference?= null
     private lateinit var firebaseAuth: FirebaseAuth
-
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +35,61 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         drawerLayout = findViewById(R.id.drawer_menu)
+
+        firebaseAuth = FirebaseAuth.getInstance()
+
+        getData()
+    }
+
+    private fun getData() {
+        val currentUser = firebaseAuth.currentUser
+
+        if(currentUser != null) {
+            val uid = currentUser.uid
+            //prijavljen korisnik
+
+            FirebaseDatabase.getInstance().getReference("users")?.child(uid)
+                ?.addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (snapshot.exists()) {
+                            val user = snapshot.getValue(Users::class.java)
+                            if (user != null) {
+                                val email = user.email
+                                val name = user.name
+                                val surname = user.surname
+                                val phone = user.phone
+                                val profileImageUriString = user.imgUrl
+
+                                val profileImageUri = Uri.parse(profileImageUriString)
+
+                                val emailTextView = findViewById<TextView>(R.id.emailTextView)
+                                val nameTextView = findViewById<TextView>(R.id.nameTextView)
+                                val profileImageView = findViewById<ImageView>(R.id.profileImageView)
+
+
+                                emailTextView.text = "Email: $email"
+                                nameTextView.text = "Name: $name"
+                                profileImageView.load(profileImageUri) {
+                                    crossfade(true)
+                                    crossfade(1000)
+                                    transformations(CircleCropTransformation())
+                                }
+
+
+
+
+                            }
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        //greska pri dohvatanju podataka
+                    }
+
+                })
+        }else{
+            //korisnik nije prijavljen
+        }
 
     }
 
