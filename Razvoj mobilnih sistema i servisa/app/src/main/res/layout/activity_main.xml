@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:id="@+id/drawer_menu"
     android:fitsSystemWindows="true"
-    
+    tools:openDrawer="start"
     tools:context=".MainActivity">
 
     <LinearLayout
@@ -21,7 +21,8 @@
             android:id="@+id/toolbar"
             android:elevation="40dp"
             android:background="@color/roza"
-            android:theme="@style/ThemeOverlay.AppCompat.Light"/>
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
 
         <FrameLayout
@@ -36,5 +37,7 @@
         android:layout_height="match_parent"
         android:id="@+id/nav_view"
         app:headerLayout="@layout/nav_header"
+        android:layout_gravity="start"
         app:menu="@menu/nav_menu"/>
+
 </androidx.drawerlayout.widget.DrawerLayout>

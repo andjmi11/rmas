@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                     val message ="Nema uri slike"
                                     showErrorMessage(message)
                                 }
-                               /*val emailTextView = findViewById<TextView>(R.id.emailTextView)
+                               val emailTextView = findViewById<TextView>(R.id.emailTextView)
                                 val nameTextView = findViewById<TextView>(R.id.nameTextView)
                                 val profileImageView = findViewById<ImageView>(R.id.profileImageView)
 
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                     crossfade(true)
                                     crossfade(1000)
                                     transformations(CircleCropTransformation())
-                                }*/
+                                }
 
 
 
@@ -171,16 +171,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerLayout.openDrawer(GravityCompat.START)
     }*/
 
-    /*fun logout(view: View) {
+   /* fun logout(view: View) {
         logoutMenu(this@MainActivity)
     }
-
-    fun callMap(view: View) {
-
-    }*/
-
-
-
 
     private fun logoutMenu(mainActivity: MainActivity) {
         val builder = AlertDialog.Builder(mainActivity)
@@ -204,7 +197,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val dialog = builder.create()
 
         dialog.show()
-    }
+    }*/
 }
 
 

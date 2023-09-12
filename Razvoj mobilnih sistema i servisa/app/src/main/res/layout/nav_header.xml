@@ -11,13 +11,21 @@
 
     <ImageView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-        <!--ovde je profilna-->
+        android:layout_height="wrap_content"
+        android:id="@+id/profileImageView"/>
+
+
 
     <TextView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    <!--podaci-->
+        android:layout_height="wrap_content"
+        android:id="@+id/emailTextView"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/nameTextView"/>
+
 
 
 </LinearLayout>

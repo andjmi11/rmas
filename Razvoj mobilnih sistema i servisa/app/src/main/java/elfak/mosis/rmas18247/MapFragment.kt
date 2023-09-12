@@ -1,59 +1,81 @@
 package elfak.mosis.rmas18247
 
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.preference.PreferenceManager
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.compass.CompassOverlay
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [MapFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class MapFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    lateinit var map: MapView
+    private val REQUEST_PERMISSIONS_REQUEST_CODE = 1
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false)
+        val view = inflater.inflate(R.layout.fragment_map, container, false)
+
+        val ctx = requireContext()
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
+
+        map = view.findViewById<MapView>(R.id.map)
+        map.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
+        map.controller.zoomTo(18.8)
+
+        val permissions = arrayOf(
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.CHANGE_NETWORK_STATE,
+            android.Manifest.permission.ACCESS_WIFI_STATE,
+            android.Manifest.permission.INTERNET
+        )
+
+        requestPermissionsIfNecessary(permissions)
+
+        map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+        map.setMultiTouchControls(true)
+
+        val compassOverlay = CompassOverlay(ctx, map)
+        compassOverlay.enableCompass()
+        map.overlays.add(compassOverlay)
+
+        val latitude = 45.845557
+        val longitude = 26.179020
+        val point = GeoPoint(latitude, longitude)
+
+        val startMarker = Marker(map)
+        startMarker.position = point
+        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        map.overlays.add(startMarker)
+
+        map.controller.setCenter(point)
+
+        return view
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment MapFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            MapFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
+    private fun requestPermissionsIfNecessary(permissions: Array<String>) {
+        val missingPermissions = ArrayList<String>()
+
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(requireContext(), permission) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(permission)
             }
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(requireActivity(), missingPermissions.toTypedArray(), REQUEST_PERMISSIONS_REQUEST_CODE)
+        }
     }
 }
