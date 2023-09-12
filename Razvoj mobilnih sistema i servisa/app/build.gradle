@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace 'elfak.mosis.rmas18247'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "elfak.mosis.rmas18247"
         minSdk 24
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -58,6 +58,9 @@ dependencies {
     implementation 'com.karumi:dexter:6.2.2'
     implementation("io.coil-kt:coil:1.1.1")
 
-    implementation 'org.osmdroid:osmdroid-android:6.1.13'
+    implementation 'org.osmdroid:osmdroid-android:6.1.16'
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.2'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.2'
 }
