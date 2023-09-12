@@ -9,12 +9,15 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.Toolbar
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import coil.load
 import coil.transform.CircleCropTransformation
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -23,7 +26,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import elfak.mosis.rmas18247.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerLayout: DrawerLayout
 
@@ -40,12 +43,44 @@ class MainActivity : AppCompatActivity() {
 
         drawerLayout = findViewById(R.id.drawer_menu)
 
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        val navigationView = findViewById<NavigationView>(R.id.nav_view)
+        navigationView.setNavigationItemSelectedListener(this)
+
+        val toggle = ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.open_nav, R.string.close_nav)
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        if(savedInstanceState == null){
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, MapFragment()).commit()
+            navigationView.setCheckedItem(R.id.nav_logout) //ovde mi treba nav_map!!!
+
+        }
         firebaseAuth = FirebaseAuth.getInstance()
 
         getData()
 
     }
 
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.nav_logout -> supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, MapFragment()).commit()
+        }
+        drawerLayout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    override fun onBackPressed() {
+        if(drawerLayout.isDrawerOpen(GravityCompat.START)){
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            onBackPressedDispatcher.onBackPressed()
+        }
+    }
 
     private fun getData() {
         val currentUser = firebaseAuth.currentUser
@@ -71,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                                     val message ="Nema uri slike"
                                     showErrorMessage(message)
                                 }
-                                val emailTextView = findViewById<TextView>(R.id.emailTextView)
+                               /*val emailTextView = findViewById<TextView>(R.id.emailTextView)
                                 val nameTextView = findViewById<TextView>(R.id.nameTextView)
                                 val profileImageView = findViewById<ImageView>(R.id.profileImageView)
 
@@ -83,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                                     crossfade(true)
                                     crossfade(1000)
                                     transformations(CircleCropTransformation())
-                                }
+                                }*/
 
 
 
@@ -128,21 +163,21 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    fun clickMenu(view: View) {
+   /* fun clickMenu(view: View) {
         openDrawer(drawerLayout)
     }
 
     private fun openDrawer(drawerLayout: DrawerLayout) {
         drawerLayout.openDrawer(GravityCompat.START)
-    }
+    }*/
 
-    fun logout(view: View) {
+    /*fun logout(view: View) {
         logoutMenu(this@MainActivity)
     }
 
     fun callMap(view: View) {
 
-    }
+    }*/
 
 
 
