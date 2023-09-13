@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if(savedInstanceState == null){
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, MapFragment()).commit()
-            navigationView.setCheckedItem(R.id.nav_logout) //ovde mi treba nav_map!!!
+            navigationView.setCheckedItem(R.id.nav_map)
 
         }
         firebaseAuth = FirebaseAuth.getInstance()
@@ -67,8 +67,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            R.id.nav_logout -> supportFragmentManager.beginTransaction()
+            R.id.nav_map -> supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, MapFragment()).commit()
+            R.id.nav_logout -> logoutMenu(this)
         }
         drawerLayout.closeDrawer(GravityCompat.START)
         return true
@@ -169,11 +170,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun openDrawer(drawerLayout: DrawerLayout) {
         drawerLayout.openDrawer(GravityCompat.START)
-    }*/
-
-   /* fun logout(view: View) {
-        logoutMenu(this@MainActivity)
     }
+
+    fun logout(view: View) {
+        logoutMenu(this@MainActivity)
+    }*/
 
     private fun logoutMenu(mainActivity: MainActivity) {
         val builder = AlertDialog.Builder(mainActivity)
@@ -197,7 +198,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val dialog = builder.create()
 
         dialog.show()
-    }*/
+    }
 }
 
 

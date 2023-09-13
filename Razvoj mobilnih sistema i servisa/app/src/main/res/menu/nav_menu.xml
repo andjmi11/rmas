@@ -7,9 +7,22 @@
         android:checkableBehavior="single">
 
         <item
-            android:id="@+id/nav_logout"
-            android:icon="@drawable/baseline_logout_24"
-            android:title="Odjavi se"/>
+            android:id="@+id/nav_map"
+            android:icon="@drawable/baseline_map_24"
+            android:title="Otvori mapu" />
 
     </group>
+
+    <item
+        android:title="">
+
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@drawable/baseline_logout_24"
+                android:title="Odjavi se"/>
+
+        </menu>
+    </item>
+
 </menu>
