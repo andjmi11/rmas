@@ -1,6 +1,5 @@
 package elfak.mosis.rmas18247
 
-import android.net.Uri
 
 data class Users(
     val email: String? = null,
