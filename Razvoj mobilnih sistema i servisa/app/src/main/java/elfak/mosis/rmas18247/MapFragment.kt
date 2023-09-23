@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
@@ -19,6 +20,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import coil.transform.CircleCropTransformation
 import com.google.firebase.auth.FirebaseAuth
@@ -45,7 +48,6 @@ class MapFragment : Fragment() {
     private lateinit var map: MapView
     private val REQUEST_PERMISSIONS_REQUEST_CODE = 1
     private lateinit var currentLocation:GeoPoint
-
 
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var firebaseRef: DatabaseReference
@@ -92,15 +94,16 @@ class MapFragment : Fragment() {
             if (isLocationEnabled()) {
                 setMyLocationOverlay()
                 setOnMapClickOverlay()
-
             } else {
-                    showLocationDisabledDialog()
-                }
+                showLocationDisabledDialog()
             }
+        }
 
-        loadPlacesFromDatabase()
         map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
         map.setMultiTouchControls(true)
+
+        loadPlacesFromFirebase();
+
 
         return view
     }
@@ -171,7 +174,6 @@ class MapFragment : Fragment() {
                     saveData()
                     alertDialog.dismiss()
 
-                    addMarker(geoPoint as GeoPoint)
                 }
 
                 alertDialog.show()
@@ -181,45 +183,6 @@ class MapFragment : Fragment() {
             }
         })
     }
-
-    private val markers = ArrayList<Marker>()
-    private fun loadPlacesFromDatabase() {
-        val placesRef = firebaseRef.child("places")
-
-        placesRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-
-                for (marker in markers) {
-                    map.overlays.remove(marker)
-                }
-                markers.clear()
-
-                for (placeSnapshot in dataSnapshot.children) {
-                    val place = placeSnapshot.getValue(Places::class.java)
-                    if (place != null) {
-                        // Dodajte marker za svako mesto
-                        addMarkerForPlace(place)
-                    }
-                }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Dodajte tretman grešaka ovde ako je potrebno
-            }
-        })
-    }
-    private fun addMarkerForPlace(place: Places) {
-        val marker = Marker(map)
-        val geoPoint = GeoPoint(place.latitude, place.longitude)
-        marker.position = geoPoint
-        marker.title = place.naslov
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-
-        map.overlays.add(marker)
-        markers.add(marker)
-        map.invalidate()
-    }
-
     private fun saveData() {
         val uid = firebaseAuth.currentUser?.uid
 
@@ -230,6 +193,7 @@ class MapFragment : Fragment() {
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         val currentDate = Date()
+
 
         val place = Places(
             naslov, HashMap(), mesto, uid.toString(), opisi, ocene, brOcena,
@@ -307,17 +271,26 @@ class MapFragment : Fragment() {
                     val selectedImage = data?.data
                     val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, selectedImage)
                     yourBitmap = bitmap
-                        image.load(bitmap) {
-                            crossfade(true)
-                            crossfade(1000)
-                            transformations(CircleCropTransformation())
-                        }
+                    image.load(bitmap) {
+                        crossfade(true)
+                        crossfade(1000)
+                        transformations(CircleCropTransformation())
+                    }
                 }
             }
         }
     }
 
-    private fun addMarker(geoPoint: GeoPoint) {
+
+    private lateinit var getNaslov:String
+    private lateinit var getkreatorID: String
+    private lateinit var getkreatorIme: String
+    private lateinit var getkreatorPrezime: String
+    private var getOpisi :HashMap<String, String> = HashMap()
+    private var getOcene: HashMap<String, Float> = HashMap()
+    //private  var getOcena: Float=0.0f
+
+    private fun addMarker(geoPoint: GeoPoint, naslov: String, kreator: String) {
         val marker = Marker(map)
         marker.position = geoPoint
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
@@ -325,23 +298,117 @@ class MapFragment : Fragment() {
         map.invalidate() // Osvežite mapu da biste videli promene
 
         marker.setOnMarkerClickListener { marker, mapView ->
-            val title = "Naslov informacije"
-            val description = "Ovo su dodatne informacije o ovom mestu."
-            showInfoDialog(title, description)
-            true // Vraća true da označi da je događaj obrađen
+            showRecenzije(naslov, kreator)
+            true
         }
+
     }
 
-    private fun showInfoDialog(title: String, description: String) {
-        val alertDialog = AlertDialog.Builder(requireContext())
-        alertDialog.setTitle(title)
-        alertDialog.setMessage(description)
-        alertDialog.setPositiveButton("OK") { dialog, _ ->
-            dialog.dismiss()
-        }
+    private fun showRecenzije(naslov: String, kreator:String){
+        val inflater = requireActivity().layoutInflater
+        val dialogView = inflater.inflate(R.layout.dialog_listarecenzija, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(dialogView)
+        val alertDialog = alertDialogBuilder.create()
+
+        val editNaslov = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val editOpis = dialogView.findViewById<TextView>(R.id.creator_name_text)
+
+
+        editNaslov.text=naslov.toString()
+
+        FirebaseDatabase.getInstance().getReference("users")?.child(kreator)
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val user = snapshot.getValue(Users::class.java)
+                        if (user != null) {
+                            getkreatorIme= user.name.toString()
+                            getkreatorPrezime= user.surname.toString()
+
+                            editOpis.text="$getkreatorIme $getkreatorPrezime"
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+
+        showReviews()
+
         alertDialog.show()
+
     }
 
+
+
+    private fun showReviews(){
+        val reviewsList = mutableListOf<ReviewPlaces>()
+
+        FirebaseDatabase.getInstance().getReference("places")
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        for (markerSnapshot in snapshot.children) {
+                            val placesInfo = markerSnapshot.getValue(Places::class.java)
+                            if (placesInfo != null) {
+                               getOpisi=placesInfo.opisi
+                                getOcene=placesInfo.ocena
+
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Greška pri čitanju markera iz Firebase
+                }
+            })
+
+        for(key in getOpisi.keys){
+            //ucitam ime tog usera
+            FirebaseDatabase.getInstance().getReference("users")?.child(key)
+                ?.addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        if (snapshot.exists()) {
+                            val user = snapshot.getValue(Users::class.java)
+                            if (user != null) {
+                                getkreatorIme= user.name.toString()
+                                getkreatorPrezime= user.surname.toString()
+
+                            }
+                        }
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                    }
+                })
+
+            //prikazem opis
+            val ime = getkreatorIme.toString()
+            val prezime = getkreatorPrezime.toString()
+            val ocena = getOcene[key] ?: 0.0f
+            val opis = getOpisi[key]
+
+            //prikazem ocenu
+            //u reviewList
+            val review = ReviewPlaces(ime, prezime, opis.toString(), ocena)
+            reviewsList.add(review)
+
+        }
+
+        //adapter
+        val recyclerView = view?.findViewById<RecyclerView>(R.id.existing_reviews_recycler_view)
+
+        val layoutManager = LinearLayoutManager(requireContext())
+        val adapter = ReviewsAdapter(reviewsList)
+
+        recyclerView?.layoutManager = layoutManager
+        recyclerView?.adapter = adapter
+
+    }
 
     private fun showLocationDisabledDialog() {
         val alertDialog = AlertDialog.Builder(requireContext())
@@ -415,4 +482,36 @@ class MapFragment : Fragment() {
             ActivityCompat.requestPermissions(requireActivity(), missingPermissions.toTypedArray(), REQUEST_PERMISSIONS_REQUEST_CODE)
         }
     }
+    private fun loadPlacesFromFirebase() {
+        FirebaseDatabase.getInstance().getReference("places")
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        for (markerSnapshot in snapshot.children) {
+                            val placesInfo = markerSnapshot.getValue(Places::class.java)
+                            if (placesInfo != null) {
+                                // Kreirajte marker na osnovu informacija iz Firebase i dodajte ga na mapu
+                                val geoPoint = GeoPoint(placesInfo.latitude, placesInfo.longitude)
+                                //da li ovde mogu da preuzmem sve podatke
+                                getNaslov=placesInfo.naslov
+
+                                getkreatorID=placesInfo.kreatorID.toString();
+
+                                addMarker(geoPoint, getNaslov, getkreatorID)
+
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Greška pri čitanju markera iz Firebase
+                }
+            })
+    }
+
+
+
+
+
 }
