@@ -11,6 +11,11 @@
             android:icon="@drawable/baseline_map_24"
             android:title="Otvori mapu" />
 
+        <item
+            android:id="@+id/nav_places"
+            android:icon="@drawable/baseline_place_24"
+            android:title="Sva mesta"/>
+
     </group>
 
     <item

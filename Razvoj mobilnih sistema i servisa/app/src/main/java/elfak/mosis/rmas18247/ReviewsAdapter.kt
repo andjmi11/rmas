@@ -3,34 +3,30 @@ package elfak.mosis.rmas18247
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RatingBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import org.w3c.dom.Text
 
-class ReviewsAdapter(private val reviews: List<ReviewPlaces>) : RecyclerView.Adapter<ReviewsAdapter.ViewHolder>() {
-
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val userNameTextView: TextView = itemView.findViewById(R.id.user_name_text)
-        val userSurnameTextView: TextView = itemView.findViewById(R.id.user_surname_text)
-       // val descriptionTextView: TextView = itemView.findViewById(R.id.description_text)
-       // val ratingBar: RatingBar = itemView.findViewById(R.id.rating_bar)
+class ReviewsAdapter(private val reviewList: List<ReviewsList>) : RecyclerView.Adapter<ReviewsAdapter.ViewHolder>() {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReviewsAdapter.ViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.review_item, parent, false)
+        return ReviewsAdapter.ViewHolder(view)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_review, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val review = reviews[position]
-        holder.userNameTextView.text = review.userName
-        holder.userSurnameTextView.text = review.userSurname
-      //  holder.descriptionTextView.text = review.description
-       // holder.ratingBar.rating = review.rating
-    }
+    override fun onBindViewHolder(holder: ReviewsAdapter.ViewHolder, position: Int) {
+        val currentItem = reviewList [position]
+        holder.korisnik.text=currentItem.korisnikid
+        holder.ocena.text=currentItem.ocena.toString()
+        holder.opis.text=currentItem.opis    }
 
     override fun getItemCount(): Int {
-        return reviews.size
+        return reviewList.size
+    }
+
+
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val korisnik : TextView = itemView.findViewById(R.id.korisnik)
+        val ocena: TextView = itemView.findViewById(R.id.ocena)
+        val opis: TextView = itemView.findViewById(R.id.opis)
+
     }
 }

@@ -3,6 +3,7 @@ package elfak.mosis.rmas18247
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -10,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -47,11 +49,16 @@ class MapFragment : Fragment() {
 
     private lateinit var map: MapView
     private val REQUEST_PERMISSIONS_REQUEST_CODE = 1
-    private lateinit var currentLocation:GeoPoint
+    private lateinit var currentLocation: GeoPoint
 
     private lateinit var firebaseAuth: FirebaseAuth
-    private lateinit var firebaseRef: DatabaseReference
+    private lateinit var firebaseRef: DatabaseReference //za places
+    private lateinit var firebaseRef2: DatabaseReference //za reviews
     private lateinit var storageRef: StorageReference
+
+    private lateinit var reviewRecyclerView: RecyclerView
+    private lateinit var reviewArray: ArrayList<ReviewsList>
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,7 +67,8 @@ class MapFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_map, container, false)
 
         firebaseAuth = FirebaseAuth.getInstance()
-        firebaseRef  = FirebaseDatabase.getInstance().getReference("places")
+        firebaseRef = FirebaseDatabase.getInstance().getReference("places")
+        firebaseRef2 = FirebaseDatabase.getInstance().getReference("reviews")
         storageRef = FirebaseStorage.getInstance().getReference("placesImages")
 
 
@@ -85,12 +93,19 @@ class MapFragment : Fragment() {
         map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
         map.setMultiTouchControls(true)
 
-        if(ActivityCompat.checkSelfPermission(requireActivity(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            && ActivityCompat.checkSelfPermission(requireActivity(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+        if (ActivityCompat.checkSelfPermission(
+                requireActivity(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+            && ActivityCompat.checkSelfPermission(
+                requireActivity(),
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             requestPermissionLauncher.launch(
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             )
-        } else{
+        } else {
             if (isLocationEnabled()) {
                 setMyLocationOverlay()
                 setOnMapClickOverlay()
@@ -108,87 +123,65 @@ class MapFragment : Fragment() {
         return view
     }
 
-    private lateinit var naslov:String
-    private lateinit var opis: String
-    private var opisi :HashMap<String, String> = HashMap()
-    private  lateinit var mesto: String
-    private var ocena:Float=0.0f
-    private  var ocene: HashMap<String, Float> = HashMap()
-    private var longitude: Double=0.0
-    private var latitude:Double=0.0
-    private var brOcena=0
-    private lateinit var yourBitmap:Bitmap
-    private lateinit var image:ImageView
+    private lateinit var naslov: String
+    private lateinit var mesto: String
+    private var longitude: Double = 0.0
+    private var latitude: Double = 0.0
+    private lateinit var yourBitmap: Bitmap
+    private lateinit var image: ImageView
 
     private fun setOnMapClickOverlay() {
         map.overlays.add(object : Overlay() {
             override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
-                // Dobijemo geografske koordinate tačke na koju je korisnik kliknuo
+                // dobijemo geografske koordinate tačke na koju je korisnik kliknuo
                 val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
 
-                longitude= geoPoint.longitude.toDouble()
-                latitude= geoPoint.latitude.toDouble()
+                longitude = geoPoint.longitude.toDouble()
+                latitude = geoPoint.latitude.toDouble()
 
                 //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
                 val inflater = requireActivity().layoutInflater
-                val dialogView = inflater.inflate(R.layout.dialog_recenzija, null)
+                val dialogView = inflater.inflate(R.layout.dialog_newplace, null)
 
                 val alertDialogBuilder = AlertDialog.Builder(requireContext())
                 alertDialogBuilder.setView(dialogView)
-                val alertDialog = alertDialogBuilder.create()
-
-                // Inicijalizacija elemenata dijaloga
-                image = dialogView.findViewById<ImageView>(R.id.image)
 
 
-                val placeAutoComplete = dialogView.findViewById<AutoCompleteTextView>(R.id.place_autocomplete)
-                val places = listOf("Menza", "Restoran")
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, places)
+                val imeMestaEditText = dialogView.findViewById<EditText>(R.id.imeMestaEditText)
+                val tipMestaSpinner = dialogView.findViewById<Spinner>(R.id.tipMestaSpinner)
+
+
+                val adapter = ArrayAdapter.createFromResource(
+                    requireContext(),
+                    R.array.opcije_mesta,
+                    android.R.layout.simple_spinner_item
+                )
+
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                placeAutoComplete.setAdapter(adapter)
 
-                val submitButton = dialogView.findViewById<Button>(R.id.submit_button)
+                // Postavite adapter za Spinner
+                tipMestaSpinner.adapter = adapter
 
-
-                image.setOnClickListener{
-                    val pictureDialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    pictureDialog.setTitle("Izaberi način dodavanja slike")
-                    val pictureDialogItem = arrayOf("Izaberi iz galerije", "Otvori kameru")
-                    pictureDialog.setItems(pictureDialogItem){dialog, which ->
-                        when(which){
-                            0->gallery()
-                            1-> camera()
-                        }
-                    }
-
-                    pictureDialog.show()
-                }
-
-                submitButton.setOnClickListener {
-                    mesto = placeAutoComplete.text.toString()
-                    naslov = dialogView.findViewById<EditText>(R.id.title_edittext).text.toString()
-                    opis = dialogView.findViewById<EditText>(R.id.description_edittext).text.toString()
-                    ocena = dialogView.findViewById<RatingBar>(R.id.rating_bar).rating
-
-                    brOcena++
-                    saveData()
-                    alertDialog.dismiss()
-
-                }
-
-                alertDialog.show()
+                AlertDialog.Builder(requireContext())
+                    .setView(dialogView)
+                    .setTitle("Unos mesta")
+                    .setPositiveButton("Potvrdi", DialogInterface.OnClickListener { dialog, which ->
+                        naslov = imeMestaEditText.text.toString()
+                        mesto = tipMestaSpinner.selectedItem.toString()
+                        saveData()
+                    })
+                    .setNegativeButton("Otkaži", null)
+                    .create()
+                    .show()
 
 
                 return true
             }
         })
     }
+
     private fun saveData() {
         val uid = firebaseAuth.currentUser?.uid
-
-        opisi[uid.toString()] = opis
-        ocene[uid.toString()] = ocena
-
 
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -196,25 +189,37 @@ class MapFragment : Fragment() {
 
 
         val place = Places(
-            naslov, HashMap(), mesto, uid.toString(), opisi, ocene, brOcena,
+            naslov.toString(), mesto.toString(), "", uid.toString(),
             longitude, latitude, dateFormat.format(currentDate), timeFormat.format(currentDate)
         )
 
         if (uid != null) {
             val newPlaceRef = firebaseRef.push()
+            val newPlaceId = newPlaceRef.key
+
+            if (newPlaceId != null)
+                place.pid = newPlaceId
             newPlaceRef.setValue(place).addOnCompleteListener {
                 if (it.isSuccessful) {
-                    Toast.makeText(requireContext(), "Uspešno unešeni podaci o mestu!", Toast.LENGTH_SHORT).show()
-                    saveImageToStorage(newPlaceRef.key.toString())
+                    Toast.makeText(
+                        requireContext(),
+                        "Uspešno unešeni podaci o mestu!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
-                    Toast.makeText(requireContext(), "Neupešno unešeni podaci o mestu!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Neupešno unešeni podaci o mestu!",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
                 }
             }
         }
 
     }
-    private fun saveImageToStorage(placeId: String) {
+
+    /*private fun saveImageToStorage(placeId: String) {
         val timestamp = System.currentTimeMillis()
         val imageFileName = "Places/place_image_${placeId}_$timestamp.jpg"
         val imageRef = FirebaseStorage.getInstance().getReference(imageFileName)
@@ -239,13 +244,13 @@ class MapFragment : Fragment() {
         val byteArrayOutputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
         return byteArrayOutputStream.toByteArray()
-    }
+    }*/
 
     private val CAMERA_REQUEST_CODE = 1
     private val GALLERY_REQUEST_CODE = 2
     private fun gallery() {
         val intent = Intent(Intent.ACTION_PICK)
-        intent.type="image/*"
+        intent.type = "image/*"
         startActivityForResult(intent, GALLERY_REQUEST_CODE)
     }
 
@@ -253,6 +258,7 @@ class MapFragment : Fragment() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         startActivityForResult(intent, CAMERA_REQUEST_CODE)
     }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -269,7 +275,10 @@ class MapFragment : Fragment() {
                 }
                 GALLERY_REQUEST_CODE -> {
                     val selectedImage = data?.data
-                    val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, selectedImage)
+                    val bitmap = MediaStore.Images.Media.getBitmap(
+                        requireContext().contentResolver,
+                        selectedImage
+                    )
                     yourBitmap = bitmap
                     image.load(bitmap) {
                         crossfade(true)
@@ -282,80 +291,37 @@ class MapFragment : Fragment() {
     }
 
 
-    private lateinit var getNaslov:String
+    private lateinit var getNaslov: String
     private lateinit var getkreatorID: String
     private lateinit var getkreatorIme: String
     private lateinit var getkreatorPrezime: String
-    private var getOpisi :HashMap<String, String> = HashMap()
-    private var getOcene: HashMap<String, Float> = HashMap()
-    //private  var getOcena: Float=0.0f
+    private lateinit var getTipMesta: String
+    private lateinit var getMestoID: String
+    private var getOcena: Float = 0.0f
+    private lateinit var getOpis: String
 
-    private fun addMarker(geoPoint: GeoPoint, naslov: String, kreator: String) {
-        val marker = Marker(map)
-        marker.position = geoPoint
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-        map.overlays.add(marker)
-        map.invalidate() // Osvežite mapu da biste videli promene
-
-        marker.setOnMarkerClickListener { marker, mapView ->
-            showRecenzije(naslov, kreator)
-            true
-        }
-
-    }
-
-    private fun showRecenzije(naslov: String, kreator:String){
-        val inflater = requireActivity().layoutInflater
-        val dialogView = inflater.inflate(R.layout.dialog_listarecenzija, null)
-
-        val alertDialogBuilder = AlertDialog.Builder(requireContext())
-        alertDialogBuilder.setView(dialogView)
-        val alertDialog = alertDialogBuilder.create()
-
-        val editNaslov = dialogView.findViewById<TextView>(R.id.dialog_title)
-        val editOpis = dialogView.findViewById<TextView>(R.id.creator_name_text)
-
-
-        editNaslov.text=naslov.toString()
-
-        FirebaseDatabase.getInstance().getReference("users")?.child(kreator)
-            ?.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        val user = snapshot.getValue(Users::class.java)
-                        if (user != null) {
-                            getkreatorIme= user.name.toString()
-                            getkreatorPrezime= user.surname.toString()
-
-                            editOpis.text="$getkreatorIme $getkreatorPrezime"
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                }
-            })
-
-        showReviews()
-
-        alertDialog.show()
-
-    }
-
-
-
-    private fun showReviews(){
-        val reviewsList = mutableListOf<ReviewPlaces>()
-
+    private fun loadPlacesFromFirebase() {
         FirebaseDatabase.getInstance().getReference("places")
             ?.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
                         for (markerSnapshot in snapshot.children) {
+                            val placeId = markerSnapshot.key
                             val placesInfo = markerSnapshot.getValue(Places::class.java)
                             if (placesInfo != null) {
-                               getOpisi=placesInfo.opisi
-                                getOcene=placesInfo.ocena
+                                //informacije iz firebase
+                                val geoPoint = GeoPoint(placesInfo.latitude, placesInfo.longitude)
+                                getNaslov = placesInfo.naslov
+                                getkreatorID = placesInfo.kreatorID.toString();
+                                getTipMesta = placesInfo.mesto
+                                getMestoID = placeId.toString()
+                                addMarker(
+                                    geoPoint,
+                                    getNaslov,
+                                    getkreatorID,
+                                    getTipMesta,
+                                    getMestoID
+                                )
 
                             }
                         }
@@ -366,77 +332,205 @@ class MapFragment : Fragment() {
                     // Greška pri čitanju markera iz Firebase
                 }
             })
+    }
 
-        for(key in getOpisi.keys){
-            //ucitam ime tog usera
-            FirebaseDatabase.getInstance().getReference("users")?.child(key)
-                ?.addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            val user = snapshot.getValue(Users::class.java)
-                            if (user != null) {
-                                getkreatorIme= user.name.toString()
-                                getkreatorPrezime= user.surname.toString()
+    private fun addMarker(
+        geoPoint: GeoPoint, naslov: String, kreator: String,
+        mesto: String, mestoID: String
+    ) {
+        val marker = Marker(map)
+        marker.position = geoPoint
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        map.overlays.add(marker)
+        map.invalidate() // Osvežite mapu da biste videli promene
 
-                            }
+        marker.setOnMarkerClickListener { marker, mapView ->
+            showRecenzije(naslov, kreator, mesto, mestoID)
+            true
+        }
+
+    }
+
+
+    private var imeKorisnika: String = ""
+    private var prezimeKorisnika: String = ""
+    private fun showRecenzije(
+        naslov: String, kreator: String,
+        mesto: String, mestoID: String
+    ) {
+        val inflater = requireActivity().layoutInflater
+        val dialogView = inflater.inflate(R.layout.dialog_recenzija, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(dialogView)
+        val alertDialog = alertDialogBuilder.create()
+
+
+        val textNaslov = dialogView.findViewById<TextView>(R.id.imeMesta)
+        val textKreator = dialogView.findViewById<TextView>(R.id.id_kreator)
+
+        val submitAddReview = dialogView.findViewById<Button>(R.id.submitAddReview)
+        val ocena = dialogView.findViewById<RatingBar>(R.id.rating_bar)
+        val opis = dialogView.findViewById<EditText>(R.id.opisMesta)
+
+
+        val n = "Naziv:"
+        val op = "["
+        val cl = "]"
+        textNaslov.text = "$n $naslov $op $mesto $cl"
+
+        FirebaseDatabase.getInstance().getReference("users")?.child(kreator)
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val user = snapshot.getValue(Users::class.java)
+                        if (user != null) {
+                            getkreatorIme = user.name.toString()
+                            getkreatorPrezime = user.surname.toString()
+                            val s = "Kreator:"
+                            textKreator.text = "$s $getkreatorIme $getkreatorPrezime"
                         }
                     }
+                }
 
-                    override fun onCancelled(error: DatabaseError) {
+                override fun onCancelled(error: DatabaseError) {
+
+                }
+            })
+
+
+        submitAddReview.setOnClickListener { dialogView ->
+            val uid = firebaseAuth.currentUser?.uid
+            getOcena = ocena.rating.toFloat()
+            getOpis = opis.text.toString()
+            if (uid != null) {
+
+                val review = Reviews(
+                    uid.toString(), mestoID,
+                    getOcena.toFloat(), getOpis.toString()
+                )
+
+                if (review == null)
+                    Toast.makeText(requireContext(), "Review je null", Toast.LENGTH_SHORT).show()
+
+                val newReviewRef = firebaseRef2.push()
+                newReviewRef.setValue(review).addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Uspešno unešena recenzija o mestu!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Neupešno unešena recenzija o mestu!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
                     }
-                })
+                }
+            } else {
+                Toast.makeText(requireContext(), "uid null", Toast.LENGTH_SHORT).show()
+            }
 
-            //prikazem opis
-            val ime = getkreatorIme.toString()
-            val prezime = getkreatorPrezime.toString()
-            val ocena = getOcene[key] ?: 0.0f
-            val opis = getOpisi[key]
-
-            //prikazem ocenu
-            //u reviewList
-            val review = ReviewPlaces(ime, prezime, opis.toString(), ocena)
-            reviewsList.add(review)
+            alertDialog.dismiss()
 
         }
 
-        //adapter
-        val recyclerView = view?.findViewById<RecyclerView>(R.id.existing_reviews_recycler_view)
+        reviewRecyclerView = dialogView.findViewById(R.id.reviewList)
+        reviewRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        reviewRecyclerView.setHasFixedSize(true)
 
-        val layoutManager = LinearLayoutManager(requireContext())
-        val adapter = ReviewsAdapter(reviewsList)
+        reviewArray = arrayListOf<ReviewsList>()
 
-        recyclerView?.layoutManager = layoutManager
-        recyclerView?.adapter = adapter
-
+        getReviewsData(mestoID)
+        alertDialog.show()
     }
+    private fun getReviewsData(placeId: String) {
+        firebaseRef2 = FirebaseDatabase.getInstance().getReference("reviews")
+        firebaseRef2.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val userRef = FirebaseDatabase.getInstance().getReference("users")
+
+                    for (reviewSnapshot in snapshot.children) {
+                        val review = reviewSnapshot.getValue(ReviewsList::class.java)
+                        if (review != null) {
+                            val korisnikID = review.korisnikid
+                            val mestoID = review.mestoID
+                            Log.d("TAG", "Vrednost promenljive: $mestoID")
+                            Log.d("TAG", "Vrednost promenljive: $placeId")
+                            if (mestoID == placeId) {
+                                userRef.child(korisnikID)
+                                    .addListenerForSingleValueEvent(object : ValueEventListener {
+                                        override fun onDataChange(snapshot: DataSnapshot) {
+                                            if (snapshot.exists()) {
+                                                val user = snapshot.getValue(Users::class.java)
+                                                if (user != null) {
+                                                    reviewArray.add(
+                                                        ReviewsList(
+                                                            user.name + " " + user.surname,
+                                                            review.ocena,
+                                                            review.opis,
+                                                            " "
+                                                        )
+                                                    )
+                                                    reviewRecyclerView.adapter =
+                                                        ReviewsAdapter(reviewArray)
+                                                }
+                                            }
+                                        }
+
+                                        override fun onCancelled(error: DatabaseError) {
+
+                                        }
+
+                                    })
+
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+
+        })
+    }
+
 
     private fun showLocationDisabledDialog() {
         val alertDialog = AlertDialog.Builder(requireContext())
         alertDialog.setTitle("Lokacija nije omogućena")
         alertDialog.setMessage("Za korišćenje ove funkcije, molimo omogućite lokaciju na vašem uređaju.")
         alertDialog.setPositiveButton("Otvori postavke") { _, _ ->
-            // Otvori postavke lokacije na uređaju kako bi korisnik mogao omogućiti lokaciju
+// Otvori postavke lokacije na uređaju kako bi korisnik mogao omogućiti lokaciju
             startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
         }
         alertDialog.setNegativeButton("Otkaži") { _, _ ->
-            /*val latitude =  43.320902
-            val longitude = 21.895759
-            val point = GeoPoint(latitude, longitude)
+/*val latitude =  43.320902
+val longitude = 21.895759
+val point = GeoPoint(latitude, longitude)
 
-            val startMarker = Marker(map)
-            startMarker.position = point
-            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-            map.overlays.add(startMarker)
+val startMarker = Marker(map)
+startMarker.position = point
+startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+map.overlays.add(startMarker)
 
-            map.controller.setCenter(point)
-            koordinate nisa da se postavi bilo gde mada nema smisla*/
+map.controller.setCenter(point)
+koordinate nisa da se postavi bilo gde mada nema smisla*/
         }
         alertDialog.setCancelable(false)
         alertDialog.show()
     }
 
     private fun isLocationEnabled(): Boolean {
-        val locationManager = requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        val locationManager =
+            requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
         return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
     }
 
@@ -461,8 +555,8 @@ class MapFragment : Fragment() {
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ){isGranted: Boolean ->
-            if(isGranted){
+        ) { isGranted: Boolean ->
+            if (isGranted) {
                 setMyLocationOverlay()
                 map.invalidate()
 
@@ -473,45 +567,22 @@ class MapFragment : Fragment() {
         val missingPermissions = ArrayList<String>()
 
         for (permission in permissions) {
-            if (ContextCompat.checkSelfPermission(requireContext(), permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
                 missingPermissions.add(permission)
             }
         }
 
         if (missingPermissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(requireActivity(), missingPermissions.toTypedArray(), REQUEST_PERMISSIONS_REQUEST_CODE)
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                missingPermissions.toTypedArray(),
+                REQUEST_PERMISSIONS_REQUEST_CODE
+            )
         }
     }
-    private fun loadPlacesFromFirebase() {
-        FirebaseDatabase.getInstance().getReference("places")
-            ?.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        for (markerSnapshot in snapshot.children) {
-                            val placesInfo = markerSnapshot.getValue(Places::class.java)
-                            if (placesInfo != null) {
-                                // Kreirajte marker na osnovu informacija iz Firebase i dodajte ga na mapu
-                                val geoPoint = GeoPoint(placesInfo.latitude, placesInfo.longitude)
-                                //da li ovde mogu da preuzmem sve podatke
-                                getNaslov=placesInfo.naslov
-
-                                getkreatorID=placesInfo.kreatorID.toString();
-
-                                addMarker(geoPoint, getNaslov, getkreatorID)
-
-                            }
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    // Greška pri čitanju markera iz Firebase
-                }
-            })
-    }
-
-
-
-
 
 }

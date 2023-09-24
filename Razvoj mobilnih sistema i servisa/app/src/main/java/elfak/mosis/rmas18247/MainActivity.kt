@@ -67,8 +67,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            R.id.nav_map -> supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, MapFragment()).commit()
+            R.id.nav_map -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, MapFragment()).commit()
+                getData()
+            }
+            R.id.nav_places -> supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, PlaceFragment()).commit()
             R.id.nav_logout -> logoutMenu(this)
         }
         drawerLayout.closeDrawer(GravityCompat.START)
