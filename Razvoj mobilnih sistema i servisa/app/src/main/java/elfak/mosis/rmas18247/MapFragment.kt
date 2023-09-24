@@ -2,6 +2,8 @@ package elfak.mosis.rmas18247
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -11,6 +13,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -138,9 +142,103 @@ class MapFragment : Fragment() {
             spinnerList = ArrayList<String>()
             adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, spinnerList)
             spinnerV.adapter = adapter
+
             showKreatori()
 
-            //popunjavanje meni mora kroz snapshot
+            var selectedIme: String? = null
+            var selectedPrezime: String? = null
+            var selectedTip: String? = null
+            var selectedOcena: Float=-1.0f
+            var selectedDatumOd: String? = null
+            var selectedDatumDo: String? = null
+            var selectedVremeOd: String? = null
+            var selectedVremeDo: String? = null
+            spinnerV.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    val selectedNameSurname = spinnerList[position]
+
+                    val parts = selectedNameSurname.split(" ")
+                    if (parts.size >= 2) {
+                        selectedIme = parts[0]
+                        selectedPrezime = parts[1]
+
+                        Log.d("tag", "Vrednost imena $selectedIme, vrednost prezimena $selectedPrezime")
+                        // Sada možete koristiti ime i prezime za dalje radnje
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {
+                    selectedIme = null
+                    selectedPrezime = null
+                }
+            }
+
+            val tipMestaSpinner = dialogView.findViewById<Spinner>(R.id.tipSpinner)
+            val adapterTip = ArrayAdapter.createFromResource(
+                requireContext(),
+                R.array.opcije_filter,
+                android.R.layout.simple_spinner_item
+            )
+            adapterTip.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            tipMestaSpinner.adapter = adapterTip
+            selectedTip = tipMestaSpinner.selectedItem.toString()
+            tipMestaSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    selectedTip = adapterTip.getItem(position).toString()
+                    Log.d("tag", "Odabrani tip mesta je $selectedTip")
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {
+                    // nista nije izabrano
+                }
+            }
+            val ocenaEdit = dialogView.findViewById<EditText>(R.id.ocenaEdit)
+            ocenaEdit.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                   //pre promene tekst
+                }
+
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    // Implementacija tokom promene teksta
+                }
+
+                override fun afterTextChanged(s: Editable?) {
+                    val ocenaText = s.toString().trim()
+                    if (ocenaText.isNotEmpty()) {
+                        try {
+                            selectedOcena = ocenaText.toFloat()
+                            Log.d("tag", "Vrednost ocene je $selectedOcena")
+                        } catch (e: NumberFormatException) {
+                            Log.e("tag", "Nije moguće pretvoriti tekst u float: $ocenaText")
+                        }
+                    } else {
+                       //prazno polje
+                    }
+                }
+            })
+
+            val datumOdPicker = dialogView.findViewById<EditText>(R.id.datumOd)
+            val datumDoPicker = dialogView.findViewById<EditText>(R.id.datumDo)
+            val vremeOdPicker = dialogView.findViewById<EditText>(R.id.vremeOd)
+            val vremeDoPicker = dialogView.findViewById<EditText>(R.id.vremeDo)
+
+            datumOdPicker.setOnClickListener{
+                showDatePickerDialog(datumOdPicker)
+            }
+            datumDoPicker.setOnClickListener{
+                showDatePickerDialog(datumDoPicker)
+            }
+            vremeOdPicker.setOnClickListener{
+                showTimePickerDialog(vremeOdPicker)
+            }
+            vremeDoPicker.setOnClickListener{
+                showTimePickerDialog(vremeDoPicker)
+            }
+
+            val buttonFilter = dialogView.findViewById<Button>(R.id.buttonFilter)
+            buttonFilter.setOnClickListener {
+                filtering(selectedIme, selectedPrezime, selectedTip!!, selectedOcena)
+            }
 
             alertDialog.show()
 
@@ -148,6 +246,170 @@ class MapFragment : Fragment() {
 
         return view
     }
+
+    var prikazanaMesta = mutableListOf<Places>()
+    private lateinit var flagKreator: Number
+    private lateinit var flagOcena: Number
+    private fun filtering(ime: String?, prezime: String?, tip: String, ocena: Float) {
+        map.overlays.clear()
+        setMyLocationOverlay()
+        map.invalidate()
+
+
+        if (ime != null && prezime != null) {
+            filterKreator(ime, prezime)
+        }
+
+        if(ocena != -1.0f){
+            filterOcena(ocena)
+        }
+    }
+
+
+    private fun filterOcena(ocena: Float) {
+        val reviewsRef = FirebaseDatabase.getInstance().getReference("reviews")
+        val placesRef = FirebaseDatabase.getInstance().getReference("places")
+
+        reviewsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(reviewsSnapshot: DataSnapshot) {
+                if (reviewsSnapshot.exists()) {
+                    for (review in reviewsSnapshot.children) {
+                        val reviewInfo = review.getValue(Reviews::class.java)
+                        if (reviewInfo != null && reviewInfo.ocena == ocena) {
+                            val mestoID = reviewInfo.mestoID
+
+                            placesRef.child(mestoID).addListenerForSingleValueEvent(object : ValueEventListener {
+                                override fun onDataChange(placeSnapshot: DataSnapshot) {
+                                    if (placeSnapshot.exists()) {
+                                        val placeInfo = placeSnapshot.getValue(Places::class.java)
+                                        if (placeInfo != null) {
+                                            val geoPoint = GeoPoint(placeInfo.latitude, placeInfo.longitude)
+                                            val noviNaslov = placeInfo.naslov
+                                            val noviKreator = placeInfo.kreatorID.toString()
+                                            val noviTip = placeInfo.mesto
+                                            val noviMestoID = placeSnapshot.key
+                                            Log.d("filter", "Vrednosti $geoPoint, $noviNaslov, $noviKreator, $noviTip, $noviMestoID")
+                                            if (noviMestoID != null) {
+                                                addMarker(geoPoint, noviNaslov, noviKreator, noviTip, noviMestoID)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                override fun onCancelled(error: DatabaseError) {
+                                    // Handle error
+                                }
+                            })
+                        }
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
+    }
+
+
+    private fun filterKreator(ime: String, prezime: String) {
+        val userRef = FirebaseDatabase.getInstance().getReference("users")
+        val placesRef = FirebaseDatabase.getInstance().getReference("places")
+
+        userRef.orderByChild("name").equalTo(ime)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(userSnapshot: DataSnapshot) {
+                    if (userSnapshot.exists()) {
+                        for (user in userSnapshot.children) {
+                            val userInfo = user.getValue(Users::class.java)
+                            if (userInfo?.surname == prezime) {
+                                val userId = user.key
+
+                                placesRef.orderByChild("kreatorID").equalTo(userId)
+                                    .addListenerForSingleValueEvent(object : ValueEventListener {
+                                        override fun onDataChange(placeSnapshot: DataSnapshot) {
+                                            if (placeSnapshot.exists()) {
+                                                for (place in placeSnapshot.children) {
+                                                    val placeInfo = place.getValue(Places::class.java)
+                                                    if (placeInfo != null) {
+                                                        val geoPoint = GeoPoint(placeInfo.latitude, placeInfo.longitude)
+                                                        val noviNaslov = placeInfo.naslov
+                                                        val noviKreator = placeInfo.kreatorID.toString()
+                                                        val noviTip = placeInfo.mesto
+                                                        val noviMestoID = place.key
+                                                        Log.d("filter", "Vrednosti $geoPoint, $noviNaslov, $noviKreator, $noviTip, $noviMestoID")
+                                                        if (noviMestoID != null) {
+                                                            addMarker(geoPoint, noviNaslov, noviKreator, noviTip, noviMestoID)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        override fun onCancelled(error: DatabaseError) {
+                                            // Handle error
+                                        }
+                                    })
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Handle error
+                }
+            })
+    }
+
+
+    private fun showDatePickerDialog(editText: EditText) {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _, selectedYear, selectedMonth, selectedDay ->
+                val formattedDate = String.format(
+                    Locale.getDefault(),
+                    "%04d-%02d-%02d",
+                    selectedYear,
+                    selectedMonth + 1,
+                    selectedDay
+                )
+                editText.setText(formattedDate)
+            },
+            year,
+            month,
+            day
+        )
+        datePickerDialog.show()
+    }
+
+    private fun showTimePickerDialog(editText: EditText) {
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+
+        val timePickerDialog = TimePickerDialog(
+            requireContext(),
+            { _, selectedHour, selectedMinute ->
+                val formattedTime = String.format(
+                    Locale.getDefault(),
+                    "%02d:%02d",
+                    selectedHour,
+                    selectedMinute
+                )
+                editText.setText(formattedTime)
+            },
+            hour,
+            minute,
+            true
+        )
+        timePickerDialog.show()
+    }
+
 
     private fun showKreatori() {
         spinnerRef.addValueEventListener(object : ValueEventListener {

@@ -11,5 +11,11 @@
         <item>Restoran</item>
     </string-array>
 
+    <string-array name="opcije_filter">
+        <item>Oba</item>
+        <item>Menza</item>
+        <item>Restoran</item>
+    </string-array>
+
 
 </resources>

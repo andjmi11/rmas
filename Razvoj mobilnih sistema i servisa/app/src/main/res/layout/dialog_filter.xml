@@ -49,12 +49,13 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"/>
 
-        <EditText
-            android:id="@+id/tipEdit"
+        <Spinner
+            android:id="@+id/tipSpinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Unesite tip mesta"
-            android:layout_marginStart="16dp"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:padding="20dp"/>
 
     </LinearLayout>
 
@@ -87,7 +88,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:id="@+id/datumLayout">
 
         <TextView
@@ -100,12 +101,16 @@
             android:layout_marginBottom="10dp"
             android:layout_marginEnd="16dp"/>
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
         <EditText
             android:id="@+id/datumOd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:hint="Od"
-            android:focusable="false"
+            android:focusable="true"
             android:layout_marginLeft="10dp"/>
 
         <Space
@@ -118,18 +123,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:hint="Do"
-            android:focusable="false"
+            android:focusable="true"
             android:layout_marginRight="100dp"/>
 
+        </LinearLayout>
     </LinearLayout>
-
-
-
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:id="@+id/vremeLayout">
 
         <TextView
@@ -142,6 +145,10 @@
             android:layout_marginBottom="10dp"
             android:layout_marginEnd="16dp"/>
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
         <EditText
             android:id="@+id/vremeOd"
             android:layout_width="wrap_content"
@@ -163,6 +170,7 @@
             android:focusable="false"
             android:layout_marginRight="100dp"/>
 
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -215,7 +223,7 @@
             android:text="FILTER"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp"
-            android:onClick="onButtonClick" />
+            android:id="@+id/buttonFilter" />
     </LinearLayout>
 
 
