@@ -1,0 +1,222 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginLeft="15dp"
+    android:layout_marginRight="15dp"
+    android:background="@drawable/border"
+    android:padding="10dp">
+
+    <!-- Kreator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kreator:"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <Spinner
+            android:id="@+id/kreatorSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:padding="20dp"/>
+
+
+    </LinearLayout>
+
+    <!-- Tip mesta -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tip mesta:"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <EditText
+            android:id="@+id/tipEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Unesite tip mesta"
+            android:layout_marginStart="16dp"/>
+
+    </LinearLayout>
+
+    <!-- Ocena -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ocena:"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <EditText
+            android:id="@+id/ocenaEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Unesite ocenu"
+            android:layout_marginStart="16dp"
+            android:inputType="number"
+            android:maxLines="1" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/datumLayout">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Datum kreiranja:"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="16dp"/>
+
+        <EditText
+            android:id="@+id/datumOd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Od"
+            android:focusable="false"
+            android:layout_marginLeft="10dp"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0.9" />
+
+        <EditText
+            android:id="@+id/datumDo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Do"
+            android:focusable="false"
+            android:layout_marginRight="100dp"/>
+
+    </LinearLayout>
+
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/vremeLayout">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vreme kreiranja:"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginEnd="16dp"/>
+
+        <EditText
+            android:id="@+id/vremeOd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Od"
+            android:focusable="false"
+            android:layout_marginLeft="10dp"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0.9" />
+
+        <EditText
+            android:id="@+id/vremeDo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="Do"
+            android:focusable="false"
+            android:layout_marginRight="100dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/border">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Radijus"
+            android:textSize="18sp"
+            android:layout_gravity="center_vertical"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="0.9" />
+
+        <EditText
+            android:id="@+id/radijus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="U km"
+            android:layout_marginRight="130dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp">
+
+        <CheckBox
+            android:id="@+id/poslInterakcija"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Poslednja interakcija"
+            android:textSize="16dp"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FILTER"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="16dp"
+            android:onClick="onButtonClick" />
+    </LinearLayout>
+
+
+</LinearLayout>

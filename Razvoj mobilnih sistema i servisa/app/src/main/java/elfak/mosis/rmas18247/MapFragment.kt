@@ -60,6 +60,11 @@ class MapFragment : Fragment() {
     private lateinit var reviewArray: ArrayList<ReviewsList>
 
 
+    private lateinit var spinnerV : Spinner
+    private lateinit var spinnerList: ArrayList<String>
+    private lateinit var adapter:ArrayAdapter<String>
+    private lateinit var spinnerRef: DatabaseReference
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -119,8 +124,55 @@ class MapFragment : Fragment() {
 
         loadPlacesFromFirebase();
 
+        val filter = view.findViewById<TextView>(R.id.filterButton)
+        filter.setOnClickListener{
+            val inflater = layoutInflater
+            val dialogView = inflater.inflate(R.layout.dialog_filter, null)
+
+            val alertDialogBuilder = AlertDialog.Builder(requireContext())
+            alertDialogBuilder.setView(dialogView)
+            val alertDialog = alertDialogBuilder.create()
+
+            spinnerV = dialogView.findViewById(R.id.kreatorSpinner)
+            spinnerRef = FirebaseDatabase.getInstance().getReference("users")
+            spinnerList = ArrayList<String>()
+            adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, spinnerList)
+            spinnerV.adapter = adapter
+            showKreatori()
+
+            //popunjavanje meni mora kroz snapshot
+
+            alertDialog.show()
+
+        }
 
         return view
+    }
+
+    private fun showKreatori() {
+        spinnerRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    // Očistite prethodne podatke u listi kako biste izbegli dupliciranje
+                    spinnerList.clear()
+
+                    for (userSnapshot in snapshot.children) {
+                        val name = userSnapshot.getValue(Users::class.java)
+                        if (name != null) {
+                            val ime = name.name
+                            val prezime = name.surname
+                            spinnerList.add("$ime $prezime").toString()
+                        }
+                    }
+
+                    adapter.notifyDataSetChanged()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Ovde rukujte greškom ako se dogodi
+            }
+        })
     }
 
     private lateinit var naslov: String
@@ -350,7 +402,6 @@ class MapFragment : Fragment() {
         }
 
     }
-
 
     private var imeKorisnika: String = ""
     private var prezimeKorisnika: String = ""
