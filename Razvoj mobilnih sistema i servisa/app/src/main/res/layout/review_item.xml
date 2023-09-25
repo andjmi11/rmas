@@ -11,6 +11,11 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginVertical="6dp"
         android:orientation="vertical">
@@ -26,7 +31,7 @@
                 android:layout_height="wrap_content"
                 android:text="Korisnik:"
                 android:textColor="@color/black"
-                android:textSize="26dp"
+                android:textSize="20dp"
                 android:textStyle="bold"/>
 
             <TextView
@@ -36,7 +41,7 @@
                 android:layout_marginStart="8dp"
                 android:text=" Text"
                 android:textColor="@color/black"
-                android:textSize="20dp"/>
+                android:textSize="18dp"/>
 
         </LinearLayout>
 
@@ -51,7 +56,7 @@
                 android:layout_height="wrap_content"
                 android:text="Ocena:"
                 android:textColor="@color/black"
-                android:textSize="26dp"
+                android:textSize="20dp"
                 android:textStyle="bold"/>
 
             <TextView
@@ -61,7 +66,7 @@
                 android:layout_marginStart="8dp"
                 android:text=" Text"
                 android:textColor="@color/black"
-                android:textSize="20dp"/>
+                android:textSize="18dp"/>
 
         </LinearLayout>
 
@@ -76,7 +81,7 @@
                 android:layout_height="wrap_content"
                 android:text="Opis:"
                 android:textColor="@color/black"
-                android:textSize="26dp"
+                android:textSize="20dp"
                 android:textStyle="bold"/>
 
             <TextView
@@ -86,9 +91,29 @@
                 android:layout_marginStart="8dp"
                 android:text=" Text"
                 android:textColor="@color/black"
-                android:textSize="20dp"/>
+                android:textSize="18dp"/>
+
 
         </LinearLayout>
+
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Obriši"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:layout_marginLeft="180dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="@color/roza" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/baseline_check_circle_24"
+            android:clickable="true"
+            android:id="@+id/likeImg"/>
+    </LinearLayout>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

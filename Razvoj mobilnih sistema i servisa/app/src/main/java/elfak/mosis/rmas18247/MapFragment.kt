@@ -247,9 +247,6 @@ class MapFragment : Fragment() {
         return view
     }
 
-    var prikazanaMesta = mutableListOf<Places>()
-    private lateinit var flagKreator: Number
-    private lateinit var flagOcena: Number
     private fun filtering(ime: String?, prezime: String?, tip: String, ocena: Float) {
         map.overlays.clear()
         setMyLocationOverlay()
@@ -533,78 +530,6 @@ class MapFragment : Fragment() {
 
     }
 
-    /*private fun saveImageToStorage(placeId: String) {
-        val timestamp = System.currentTimeMillis()
-        val imageFileName = "Places/place_image_${placeId}_$timestamp.jpg"
-        val imageRef = FirebaseStorage.getInstance().getReference(imageFileName)
-        val imageBytes = convertBitmapToByteArray(yourBitmap)
-
-        imageRef.putBytes(imageBytes).addOnSuccessListener {
-            val imageInfo = HashMap<String, String>()
-            imageInfo[(firebaseAuth.currentUser?.uid).toString()] = imageFileName
-
-            val imageInfoRef = firebaseRef.child(placeId).child("slike")
-            imageInfoRef.setValue(imageInfo).addOnSuccessListener {
-                Toast.makeText(requireContext(), "Uspešno sačuvana slika!", Toast.LENGTH_SHORT).show()
-            }.addOnFailureListener { exception ->
-                Toast.makeText(requireContext(), "Neuspešno sačuvana slika!", Toast.LENGTH_SHORT).show()
-            }
-        }.addOnFailureListener { exception ->
-            Toast.makeText(requireContext(), "Neuspešno sačuvana slika!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun convertBitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
-        return byteArrayOutputStream.toByteArray()
-    }*/
-
-    private val CAMERA_REQUEST_CODE = 1
-    private val GALLERY_REQUEST_CODE = 2
-    private fun gallery() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
-        startActivityForResult(intent, GALLERY_REQUEST_CODE)
-    }
-
-    private fun camera() {
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        startActivityForResult(intent, CAMERA_REQUEST_CODE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (resultCode == Activity.RESULT_OK) {
-            when (requestCode) {
-                CAMERA_REQUEST_CODE -> {
-                    val bitmap = data?.extras?.get("data") as Bitmap
-                    yourBitmap = bitmap
-                    image.load(bitmap) {
-                        crossfade(true)
-                        crossfade(1000)
-                        transformations(CircleCropTransformation())
-                    }
-                }
-                GALLERY_REQUEST_CODE -> {
-                    val selectedImage = data?.data
-                    val bitmap = MediaStore.Images.Media.getBitmap(
-                        requireContext().contentResolver,
-                        selectedImage
-                    )
-                    yourBitmap = bitmap
-                    image.load(bitmap) {
-                        crossfade(true)
-                        crossfade(1000)
-                        transformations(CircleCropTransformation())
-                    }
-                }
-            }
-        }
-    }
-
-
     private lateinit var getNaslov: String
     private lateinit var getkreatorID: String
     private lateinit var getkreatorIme: String
@@ -667,6 +592,7 @@ class MapFragment : Fragment() {
 
     private var imeKorisnika: String = ""
     private var prezimeKorisnika: String = ""
+    private lateinit var alertDialog : AlertDialog
     private fun showRecenzije(
         naslov: String, kreator: String,
         mesto: String, mestoID: String
@@ -676,7 +602,7 @@ class MapFragment : Fragment() {
 
         val alertDialogBuilder = AlertDialog.Builder(requireContext())
         alertDialogBuilder.setView(dialogView)
-        val alertDialog = alertDialogBuilder.create()
+        alertDialog = alertDialogBuilder.create()
 
 
         val textNaslov = dialogView.findViewById<TextView>(R.id.imeMesta)
@@ -711,14 +637,13 @@ class MapFragment : Fragment() {
                 }
             })
 
-
         submitAddReview.setOnClickListener { dialogView ->
             val uid = firebaseAuth.currentUser?.uid
             getOcena = ocena.rating.toFloat()
             getOpis = opis.text.toString()
             if (uid != null) {
-
                 val review = Reviews(
+                    " ",
                     uid.toString(), mestoID,
                     getOcena.toFloat(), getOpis.toString()
                 )
@@ -727,26 +652,31 @@ class MapFragment : Fragment() {
                     Toast.makeText(requireContext(), "Review je null", Toast.LENGTH_SHORT).show()
 
                 val newReviewRef = firebaseRef2.push()
-                newReviewRef.setValue(review).addOnCompleteListener {
-                    if (it.isSuccessful) {
-                        Toast.makeText(
-                            requireContext(),
-                            "Uspešno unešena recenzija o mestu!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Neupešno unešena recenzija o mestu!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                val pid = newReviewRef.key
 
+                if (pid != null) {
+                    review.pid = pid
+                    newReviewRef.setValue(review).addOnCompleteListener {
+                        if (it.isSuccessful) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Uspešno unešena recenzija o mestu!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                requireContext(),
+                                "Neupešno unešena recenzija o mestu!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                        }
                     }
-                }
-            } else {
-                Toast.makeText(requireContext(), "uid null", Toast.LENGTH_SHORT).show()
-            }
 
+                } else {
+                    Toast.makeText(requireContext(), "uid null", Toast.LENGTH_SHORT).show()
+                }
+            }
             alertDialog.dismiss()
 
         }
@@ -769,6 +699,7 @@ class MapFragment : Fragment() {
 
                     for (reviewSnapshot in snapshot.children) {
                         val review = reviewSnapshot.getValue(ReviewsList::class.java)
+                        val reviewID = reviewSnapshot.key
                         if (review != null) {
                             val korisnikID = review.korisnikid
                             val mestoID = review.mestoID
@@ -784,13 +715,37 @@ class MapFragment : Fragment() {
                                                     reviewArray.add(
                                                         ReviewsList(
                                                             user.name + " " + user.surname,
+                                                            reviewID.toString(),
                                                             review.ocena,
                                                             review.opis,
                                                             " "
                                                         )
                                                     )
-                                                    reviewRecyclerView.adapter =
-                                                        ReviewsAdapter(reviewArray)
+                                                    val currentUserUid = firebaseAuth.currentUser?.uid ?: ""
+                                                    userRef.child(currentUserUid)
+                                                        .addListenerForSingleValueEvent(object: ValueEventListener{
+                                                            override fun onDataChange(snapshot: DataSnapshot) {
+                                                                if(snapshot.exists()){
+                                                                    val cu = snapshot.getValue(Users::class.java)
+                                                                    if(cu!= null){
+                                                                        reviewRecyclerView.adapter =
+                                                                            ReviewsAdapter(reviewArray, cu.name + " " + cu.surname
+                                                                            ) { reviewID ->
+                                                                                deleteReview(
+                                                                                    reviewID
+                                                                                )
+                                                                                alertDialog.dismiss()
+
+                                                                            }
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            override fun onCancelled(error: DatabaseError) {
+                                                                TODO("Not yet implemented")
+                                                            }
+
+                                                        })
                                                 }
                                             }
                                         }
@@ -813,6 +768,29 @@ class MapFragment : Fragment() {
             }
 
         })
+    }
+
+
+    private fun deleteReview(reviewID: String) {
+        val reviewRef = firebaseRef2.child(reviewID)
+
+        reviewRef.removeValue().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Recenzija je uspešno obrisana
+                Toast.makeText(
+                    requireContext(),
+                    "Recenzija je uspešno obrisana.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                // Greška prilikom brisanja recenzije
+                Toast.makeText(
+                    requireContext(),
+                    "Greška prilikom brisanja recenzije.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
 
