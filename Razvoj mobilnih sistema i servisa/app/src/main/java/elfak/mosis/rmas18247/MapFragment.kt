@@ -8,7 +8,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import android.provider.Settings
@@ -27,7 +26,6 @@ import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.location.LocationListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
@@ -87,7 +85,6 @@ class MapFragment : Fragment() {
         firebaseRefPlaces = FirebaseDatabase.getInstance().getReference("places")
         firebaseRefReviews = FirebaseDatabase.getInstance().getReference("reviews")
         firebaseRefUsers = FirebaseDatabase.getInstance().getReference("users")
-        storageRef = FirebaseStorage.getInstance().getReference("placesImages")
 
 
         currentUser = firebaseAuth.currentUser?.uid.toString()
@@ -162,24 +159,17 @@ class MapFragment : Fragment() {
 
 
             spinnerV.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                     val selectedNameSurname = spinnerList[position]
 
                     val parts = selectedNameSurname.split(" ")
                     if (parts.size >= 2) {
                         selectedIme = parts[0]
                         selectedPrezime = parts[1]
-
-                        Log.d(
-                            "tag",
-                            "Vrednost imena $selectedIme, vrednost prezimena $selectedPrezime"
-                        )
-                        // Sada možete koristiti ime i prezime za dalje radnje
+                    }
+                    else {
+                        selectedIme = null
+                        selectedPrezime = null
                     }
                 }
 
@@ -190,21 +180,12 @@ class MapFragment : Fragment() {
             }
 
             val tipMestaSpinner = dialogView.findViewById<Spinner>(R.id.tipSpinner)
-            val adapterTip = ArrayAdapter.createFromResource(
-                requireContext(),
-                R.array.opcije_filter,
-                android.R.layout.simple_spinner_item
-            )
+            val adapterTip = ArrayAdapter.createFromResource(requireContext(), R.array.opcije_filter, android.R.layout.simple_spinner_item)
             adapterTip.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             tipMestaSpinner.adapter = adapterTip
             selectedTip = tipMestaSpinner.selectedItem.toString()
             tipMestaSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                     selectedTip = adapterTip.getItem(position).toString()
                     Log.d("tag", "Odabrani tip mesta je $selectedTip")
                 }
@@ -213,21 +194,16 @@ class MapFragment : Fragment() {
                     // nista nije izabrano
                 }
             }
+
             val ocenaEdit = dialogView.findViewById<EditText>(R.id.ocenaEdit)
             ocenaEdit.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int
-                ) {
-                    //pre promene tekst
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    TODO("Not yet implemented")
                 }
 
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    // Implementacija tokom promene teksta
+                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    TODO("Not yet implemented")
                 }
-
                 override fun afterTextChanged(s: Editable?) {
                     val ocenaText = s.toString().trim()
                     if (ocenaText.isNotEmpty()) {
@@ -245,17 +221,12 @@ class MapFragment : Fragment() {
 
             val radius = dialogView.findViewById<EditText>(R.id.radijus)
             radius.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int
-                ) {
-                    //pre promene tekst
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    TODO("Not yet implemented")
                 }
 
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    // Implementacija tokom promene teksta
+                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    TODO("Not yet implemented")
                 }
 
                 override fun afterTextChanged(s: Editable?) {
@@ -279,27 +250,29 @@ class MapFragment : Fragment() {
             val vremeDoPicker = dialogView.findViewById<EditText>(R.id.vremeDo)
 
             datumOdPicker.setOnClickListener {
-                showDatePickerDialog(datumOdPicker)
+                showDatePickerDialog(datumOdPicker, "datumOd")
+                datumOdPicker.setText(selectedDatumOd)
             }
+
             datumDoPicker.setOnClickListener {
-                showDatePickerDialog(datumDoPicker)
+                showDatePickerDialog(datumDoPicker, "datumDo")
+                datumDoPicker.setText(selectedDatumDo)
             }
+
             vremeOdPicker.setOnClickListener {
-                showTimePickerDialog(vremeOdPicker)
+                showTimePickerDialog(vremeOdPicker, "vremeOd")
+                vremeOdPicker.setText(selectedVremeOd)
             }
+
             vremeDoPicker.setOnClickListener {
-                showTimePickerDialog(vremeDoPicker)
+                showTimePickerDialog(vremeDoPicker, "vremeDo")
+                vremeDoPicker.setText(selectedVremeDo)
             }
+
 
             val buttonFilter = dialogView.findViewById<Button>(R.id.buttonFilter)
             buttonFilter.setOnClickListener {
-                filtering(
-                    selectedIme,
-                    selectedPrezime,
-                    selectedTip!!,
-                    selectedOcena,
-                    selectedRadius
-                )
+                filtering(selectedIme, selectedPrezime, selectedTip!!, selectedOcena, selectedRadius)
             }
 
             alertDialog.show()
@@ -310,14 +283,101 @@ class MapFragment : Fragment() {
     }
 
     private fun filtering(ime: String?, prezime: String?, tip: String, ocena: Float, radius: Double) {
-        map.overlays.clear()
-        setMyLocationOverlay()
-        map.invalidate()
 
-        if (ime != null && prezime != null) { filterKreator(ime, prezime) }
-        if (ocena != -1.0f) { filterOcena(ocena) }
-        if (radius != 0.0) { getMyLocation() }
+        if (ime != null && prezime != null) {
+            map.overlays.clear()
+            setMyLocationOverlay()
+            map.invalidate()
+            filterKreator(ime, prezime) }
+        if(tip != "Oba"){
+            Log.d("v", "Vrednost tip: $tip")
+            map.overlays.clear()
+            setMyLocationOverlay()
+            map.invalidate()
+            filterTip(tip)
+        }
+        if (ocena != -1.0f) {
+            map.overlays.clear()
+            setMyLocationOverlay()
+            map.invalidate()
+            filterOcena(ocena) }
+        if (radius != 0.0) {
+            getMyLocation()
+        }
+        if(selectedVremeOd!="" && selectedVremeDo!=""){
+            map.overlays.clear()
+            setMyLocationOverlay()
+            map.invalidate()
+            filterVremeDatum(selectedVremeOd.toString(), selectedVremeDo.toString(), "timeCreated")
+        }
+        if(selectedDatumOd!="" &&selectedDatumDo!=""){
+            map.overlays.clear()
+            setMyLocationOverlay()
+            map.invalidate()
+            filterVremeDatum(selectedVremeOd.toString(), selectedVremeDo.toString(), "dateCreated")
+        }
 
+    }
+
+    private fun filterVremeDatum(from: String, to: String,dateOrTIme: String) {
+        val query = firebaseRefPlaces.orderByChild(dateOrTIme).startAt(from).endAt(to)
+
+        query.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    for (placeSnapshot in dataSnapshot.children) {
+                        val placeInfo = placeSnapshot.getValue(Places::class.java)
+                        if (placeInfo != null) {
+                            val geoPoint = GeoPoint(placeInfo.latitude, placeInfo.longitude)
+                            val naslov = placeInfo.naslov
+                            val kreator = placeInfo.kreatorID.toString()
+                            val noviTip = placeInfo.mesto
+                            val noviMestoID = placeSnapshot.key
+                            Log.d("filter", "Vrednosti $geoPoint, $naslov, $kreator, $noviTip, $noviMestoID")
+
+                            // Dodajte marker na mapu koristeći ove podatke
+                            if (noviMestoID != null) {
+                                addMarker(geoPoint, naslov, kreator, noviTip, noviMestoID)
+                            }
+                        }
+                    }
+                }
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                // Obradite grešku ako je potrebno
+            }
+        })
+    }
+
+    private fun filterTip(tip: String) {
+        firebaseRefPlaces.orderByChild("mesto").equalTo(tip)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(placeSnapshot: DataSnapshot) {
+                    if (placeSnapshot.exists()) {
+                        for (place in placeSnapshot.children) {
+                            val placeInfo = place.getValue(Places::class.java)
+                            if (placeInfo != null) {
+                                val geoPoint = GeoPoint(placeInfo.latitude, placeInfo.longitude)
+                                val naslov = placeInfo.naslov
+                                val kreator = placeInfo.kreatorID.toString()
+                                val noviTip = placeInfo.mesto
+                                val noviMestoID = place.key
+                                Log.d("filter", "Vrednosti $geoPoint, $naslov, $kreator, $noviTip, $noviMestoID")
+
+                                // Dodajte marker na mapu koristeći ove podatke
+                                if (noviMestoID != null) {
+                                    addMarker(geoPoint, naslov, kreator, noviTip, noviMestoID)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Handle error
+                }
+            })
     }
 
     private fun filterRadius(myLatitude: Double, myLongitude: Double, radius: Double) {
@@ -331,6 +391,7 @@ class MapFragment : Fragment() {
                 val udaljenost = calculateDistance(myLatitude, myLongitude, objekatLatitude, objekatLongitude)
 
                 if (udaljenost > radius) {
+                    Log.d("radius", "Usao sam ")
                     markersToRemove.add(overlay)
                 }
             }
@@ -374,7 +435,6 @@ class MapFragment : Fragment() {
             filterRadius(myLatitude, myLongitude, selectedRadius)
         }
 
-
         // Zahtevajte ažuriranje lokacije
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
@@ -389,9 +449,6 @@ class MapFragment : Fragment() {
             )
         }
     }
-
-
-
 
     private fun filterOcena(ocena: Float) {
         val reviewsRef = FirebaseDatabase.getInstance().getReference("reviews")
@@ -484,9 +541,7 @@ class MapFragment : Fragment() {
                 }
             })
     }
-
-
-    private fun showDatePickerDialog(editText: EditText) {
+    private fun showDatePickerDialog(editText: EditText, field: String) {
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH)
@@ -502,6 +557,10 @@ class MapFragment : Fragment() {
                     selectedMonth + 1,
                     selectedDay
                 )
+                when (field) {
+                    "datumOd" -> selectedDatumOd = formattedDate
+                    "datumDo" -> selectedDatumDo = formattedDate
+                }
                 editText.setText(formattedDate)
             },
             year,
@@ -510,8 +569,7 @@ class MapFragment : Fragment() {
         )
         datePickerDialog.show()
     }
-
-    private fun showTimePickerDialog(editText: EditText) {
+    private fun showTimePickerDialog(editText: EditText, field: String) {
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
@@ -525,6 +583,10 @@ class MapFragment : Fragment() {
                     selectedHour,
                     selectedMinute
                 )
+                when (field) {
+                    "vremeOd" -> selectedVremeOd = formattedTime
+                    "vremeDo" -> selectedVremeDo = formattedTime
+                }
                 editText.setText(formattedTime)
             },
             hour,
@@ -534,12 +596,10 @@ class MapFragment : Fragment() {
         timePickerDialog.show()
     }
 
-
     private fun showKreatori() {
         spinnerRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    // Očistite prethodne podatke u listi kako biste izbegli dupliciranje
                     spinnerList.clear()
 
                     for (userSnapshot in snapshot.children) {
@@ -550,6 +610,7 @@ class MapFragment : Fragment() {
                             spinnerList.add("$ime $prezime").toString()
                         }
                     }
+                    spinnerList.add("Svi").toString()
 
                     adapter.notifyDataSetChanged()
                 }
@@ -569,53 +630,86 @@ class MapFragment : Fragment() {
     private lateinit var image: ImageView
 
     private fun setOnMapClickOverlay() {
-        map.overlays.add(object : Overlay() {
-            override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
-                // dobijemo geografske koordinate tacke na koju je korisnik kliknuo
-                val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
 
-                longitude = geoPoint.longitude.toDouble()
-                latitude = geoPoint.latitude.toDouble()
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            // Dobijte menadžera za dobijanje lokacije
+            val locationManager =
+                requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-                //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
-                val inflater = requireActivity().layoutInflater
-                val dialogView = inflater.inflate(R.layout.dialog_newplace, null)
+            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            if (location != null) {
+                val myLatitude = location.latitude
+                val myLongitude = location.longitude
 
-                val alertDialogBuilder = AlertDialog.Builder(requireContext())
-                alertDialogBuilder.setView(dialogView)
+                map.overlays.add(object : Overlay() {
+                    override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
+                        // dobijemo geografske koordinate tacke na koju je korisnik kliknuo
+                        val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
 
+                        longitude = geoPoint.longitude.toDouble()
+                        latitude = geoPoint.latitude.toDouble()
 
-                val imeMestaEditText = dialogView.findViewById<EditText>(R.id.imeMestaEditText)
-                val tipMestaSpinner = dialogView.findViewById<Spinner>(R.id.tipMestaSpinner)
+                        val distance = calculateDistance(
+                            myLatitude, myLongitude,
+                            geoPoint.latitude, geoPoint.longitude
+                        )
 
+                        val maxDistanceMeters = 0.1
+                        if (distance <= maxDistanceMeters) {
+                          //  najbliziMarker(myLatitude, myLongitude)
+                            //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
+                            val inflater = requireActivity().layoutInflater
+                            val dialogView = inflater.inflate(R.layout.dialog_newplace, null)
 
-                val adapter = ArrayAdapter.createFromResource(
-                    requireContext(),
-                    R.array.opcije_mesta,
-                    android.R.layout.simple_spinner_item
-                )
-
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
-                // Postavite adapter za Spinner
-                tipMestaSpinner.adapter = adapter
-
-                AlertDialog.Builder(requireContext())
-                    .setView(dialogView)
-                    .setTitle("Unos mesta")
-                    .setPositiveButton("Potvrdi", DialogInterface.OnClickListener { dialog, which ->
-                        naslov = imeMestaEditText.text.toString()
-                        mesto = tipMestaSpinner.selectedItem.toString()
-                        saveData()
-                    })
-                    .setNegativeButton("Otkaži", null)
-                    .create()
-                    .show()
+                            val alertDialogBuilder = AlertDialog.Builder(requireContext())
+                            alertDialogBuilder.setView(dialogView)
 
 
-                return true
+                            val imeMestaEditText =
+                                dialogView.findViewById<EditText>(R.id.imeMestaEditText)
+                            val tipMestaSpinner =
+                                dialogView.findViewById<Spinner>(R.id.tipMestaSpinner)
+
+
+                            val adapter = ArrayAdapter.createFromResource(
+                                requireContext(),
+                                R.array.opcije_mesta,
+                                android.R.layout.simple_spinner_item
+                            )
+
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+                            // Postavite adapter za Spinner
+                            tipMestaSpinner.adapter = adapter
+
+                            AlertDialog.Builder(requireContext())
+                                .setView(dialogView)
+                                .setTitle("Unos mesta")
+                                .setPositiveButton(
+                                    "Potvrdi",
+                                    DialogInterface.OnClickListener { dialog, which ->
+                                        naslov = imeMestaEditText.text.toString()
+                                        mesto = tipMestaSpinner.selectedItem.toString()
+                                        saveData()
+                                    })
+                                .setNegativeButton("Otkaži", null)
+                                .create()
+                                .show()
+
+
+                            return true
+                        }
+                        else{
+                            return false
+                        }
+                    }
+                })
             }
-        })
+        }
     }
 
     private fun addPointsForCurrentUser(d: Double, uid: String) {
@@ -739,6 +833,10 @@ class MapFragment : Fragment() {
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         map.overlays.add(marker)
         map.invalidate() // Osvežite mapu da biste videli promene
+
+        val customMarkerDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.baseline_pin_drop_24)
+        customMarkerDrawable?.mutate()
+        marker.icon = customMarkerDrawable
 
         marker.setOnMarkerClickListener { marker, mapView ->
             showRecenzije(naslov, kreator, mesto, mestoID)
@@ -975,9 +1073,6 @@ class MapFragment : Fragment() {
             }
         })
     }
-
-
-
     private fun deleteReview(reviewID: String) {
         val reviewRef = firebaseRefReviews.child(reviewID)
 
@@ -999,8 +1094,6 @@ class MapFragment : Fragment() {
             }
         }
     }
-
-
     private fun showLocationDisabledDialog() {
         val alertDialog = AlertDialog.Builder(requireContext())
         alertDialog.setTitle("Lokacija nije omogućena")
@@ -1048,7 +1141,32 @@ koordinate nisa da se postavi bilo gde mada nema smisla*/
                 }
             }
         }
+
+
+
     }
+
+    private fun najbliziMarker(latitude: Double, longitude: Double) {
+        for (marker in map.overlays) {
+            if (marker is Marker) {
+                val markerLatitude = marker.position.latitude
+                val markerLongitude = marker.position.longitude
+
+                val udaljenost = calculateDistance(latitude, longitude, markerLatitude, markerLongitude)
+
+                // Postavite radijus na željenu vrednost
+                val zeljeniRadijus = 1.0
+
+                if (udaljenost <= zeljeniRadijus) {
+                    val customMarkerDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.baseline_pin_drop_24_rozi)
+                    customMarkerDrawable?.mutate()
+                    marker.icon = customMarkerDrawable
+
+                }
+            }
+        }
+    }
+
 
     private val requestPermissionLauncher =
         registerForActivityResult(
