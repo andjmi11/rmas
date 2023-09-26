@@ -50,6 +50,7 @@ class RangFragment : Fragment() {
                         userArray.sortByDescending { it.points }
                         userRecyclerView.adapter =
                             UsersAdapter(userArray)
+                        userRecyclerView.adapter?.notifyDataSetChanged()
                     }
                 }
             }

@@ -51,6 +51,7 @@ class PlaceFragment : Fragment() {
                                         if(user != null){
                                             placeArray.add(PlacesList(place.naslov.toString(), " ", place.mesto.toString(), user.name +  " " + user.surname, place.dateCreated))
                                             placeRecyclerView.adapter=PlacesAdapter(placeArray, requireActivity() as AppCompatActivity)
+                                            placeRecyclerView.adapter?.notifyDataSetChanged()
                                         }
                                     }
                                 }

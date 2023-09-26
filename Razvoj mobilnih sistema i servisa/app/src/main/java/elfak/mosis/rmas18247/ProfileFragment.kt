@@ -65,28 +65,19 @@ class ProfileFragment : Fragment() {
                     user?.reauthenticate(credential)
                         ?.addOnCompleteListener { authTask ->
                             if (authTask.isSuccessful) {
-                                // Ponovna autentikacija uspešna, sada možete promeniti lozinku
                                 user.updatePassword(newPassword)
                                     .addOnCompleteListener { updateTask ->
                                         if (updateTask.isSuccessful) {
-                                            // Uspešno promenjena lozinka
                                             Toast.makeText(requireContext(), "Lozinka uspešno promenjena.", Toast.LENGTH_SHORT).show()
-                                            // Možete korisnika odjaviti i preusmeriti ga na ekran za prijavu
-                                           // FirebaseAuth.getInstance().signOut()
-                                            //startActivity(Intent(requireContext(), LoginActivity::class.java))
-
                                         } else {
-                                            // Greška prilikom promene lozinke
                                             Toast.makeText(requireContext(), "Greška prilikom promene lozinke.", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                             } else {
-                                // Greška pri ponovnoj autentikaciji
                                 Toast.makeText(requireContext(), "Netačna stara lozinka.", Toast.LENGTH_SHORT).show()
                             }
                         }
                 } else {
-                    // Poruka korisniku da unese obe lozinke
                     Toast.makeText(requireContext(), "Unesite staru i novu lozinku.", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -115,9 +106,9 @@ class ProfileFragment : Fragment() {
 
                             val profileImageUri = Uri.parse(profileImageUriString)
 
-                            Log.d("profil", "Vrednost urija $profileImageUri")
-
+                            Log.d("Tag", "Vrednost uri $profileImageUri")
                             profileImageView.load(profileImageUri) {
+                                Log.d("Tag", "Loadujem")
                                 crossfade(true)
                                 crossfade(1000)
                                 transformations(CircleCropTransformation())
@@ -127,7 +118,6 @@ class ProfileFragment : Fragment() {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    // Tretirajte greške ako je potrebno
                 }
             })
         }

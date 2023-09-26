@@ -37,17 +37,17 @@
 
                 <ImageView
                     android:id="@+id/profileImg"
-                    android:layout_width="300dp"
-                    android:layout_height="300dp"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
                     android:layout_marginTop="50dp"
-                    tools:srcCompat="@tools:sample/avatars"/>
+                   android:background="@drawable/baseline_add_a_photo_24"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_marginTop="0dp"
-                    android:padding="10dp">
+                    android:padding="0dp">
                 <Button
                     android:layout_width="150dp"
                     android:layout_height="70dp"
@@ -121,7 +121,9 @@
                 android:padding="8dp"
                 android:hint="Broj telefona"
                 android:drawableLeft="@drawable/baseline_phone_android_24"
-                android:drawablePadding="8dp"/>
+                android:drawablePadding="8dp"
+                android:inputType="number"
+                android:maxLines="1"/>
 
             <EditText
                 android:layout_width="350dp"

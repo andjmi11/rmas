@@ -210,19 +210,12 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp">
 
-        <CheckBox
-            android:id="@+id/poslInterakcija"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Poslednja interakcija"
-            android:textSize="16dp"/>
-
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="FILTER"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="16dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="200dp"
             android:id="@+id/buttonFilter" />
     </LinearLayout>
 

@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerLayout: DrawerLayout
 
-    private lateinit var firebaseAuth: FirebaseAuth
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,25 +65,46 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            R.id.nav_profile -> supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, ProfileFragment()).commit()
-            R.id.nav_map -> supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, MapFragment()).commit()
-            R.id.nav_places -> supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, PlaceFragment()).commit()
-            R.id.nav_rank -> supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, RangFragment()).commit()
+            R.id.nav_profile ->
+            {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, ProfileFragment()).addToBackStack(null).commit()
+            }
+            R.id.nav_map -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, MapFragment()).addToBackStack(null).commit()
+            }
+            R.id.nav_places -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, PlaceFragment()).addToBackStack(null).commit()
+            }
+            R.id.nav_rank -> {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, RangFragment()).addToBackStack(null).commit()
+            }
             R.id.nav_logout -> logoutMenu(this)
         }
         drawerLayout.closeDrawer(GravityCompat.START)
         return true
     }
 
-    override fun onBackPressed() {
-        if(drawerLayout.isDrawerOpen(GravityCompat.START)){
-            drawerLayout.closeDrawer(GravityCompat.START)
+
+    private fun help(){
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
         } else {
             onBackPressedDispatcher.onBackPressed()
+        }
+    }
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            if (supportFragmentManager.backStackEntryCount > 0) {
+                supportFragmentManager.popBackStack()
+            } else {
+                onBackPressedDispatcher.onBackPressed()
+            }
         }
     }
 
@@ -95,7 +115,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         builder.setMessage("Da li ste sigurni da želite da se odjavite?")
 
-        builder.setPositiveButton("Yes") { dialogInterface, _ ->
+        builder.setPositiveButton("Da") { dialogInterface, _ ->
 
             val intent = Intent(mainActivity, LoginActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -103,7 +123,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             mainActivity.finish()
         }
 
-        builder.setNegativeButton("No") { dialogInterface, _ ->
+        builder.setNegativeButton("Ne") { dialogInterface, _ ->
             dialogInterface.dismiss()
         }
 
