@@ -73,7 +73,7 @@ class SignupActivity : AppCompatActivity() {
         binding.profileImg.setOnClickListener{
             val pictureDialog = AlertDialog.Builder(this)
             pictureDialog.setTitle("Izaberi nacin dodavanja slike")
-            val pictureDialogItem = arrayOf("Izaveri iz galerije", "Otvori kameru")
+            val pictureDialogItem = arrayOf("Izaberi iz galerije", "Otvori kameru")
             pictureDialog.setItems(pictureDialogItem){dialog, which ->
                 when(which){
                     0->gallery()
@@ -133,8 +133,9 @@ class SignupActivity : AppCompatActivity() {
         val phone = binding.signupPhone.text.toString()
 
         val uid = firebaseAuth.currentUser?.uid
-        val user = Users(email,name,surname, phone, selectedImageUri.toString())
+        val user = Users(email,name,surname, phone, selectedImageUri.toString(), 0.0)
 
+        Log.d("tag", "Podaci ${user.email}, ${user.name}")
         if(uid != null){
             firebaseRef.child(uid).setValue(user).addOnCompleteListener{
                 if(it.isSuccessful){

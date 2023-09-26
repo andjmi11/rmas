@@ -7,6 +7,10 @@
         android:checkableBehavior="single">
 
         <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/baseline_account_circle_24"
+            android:title="Moj profil"/>
+        <item
             android:id="@+id/nav_map"
             android:icon="@drawable/baseline_map_24"
             android:title="Otvori mapu" />
@@ -15,6 +19,11 @@
             android:id="@+id/nav_places"
             android:icon="@drawable/baseline_place_24"
             android:title="Sva mesta"/>
+
+        <item
+            android:id="@+id/nav_rank"
+            android:icon="@drawable/baseline_military_tech_24"
+            android:title="Rangirani korisnici"/>
 
     </group>
 

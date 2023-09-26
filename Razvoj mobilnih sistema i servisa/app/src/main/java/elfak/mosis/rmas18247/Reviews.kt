@@ -5,5 +5,6 @@ data class Reviews(
     val korisnikid: String="",
     val mestoID: String = "",
     val ocena: Float=0.0f,
-    val opis:String =""
-)
+    val opis:String ="",
+    var numOfLikes: Double=0.0
+        )

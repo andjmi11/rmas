@@ -8,9 +8,11 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import org.w3c.dom.Text
 
 class ReviewsAdapter(private val reviewList: List<ReviewsList>,
-    private val currentUserUid: String, private val deleteReviewListener: (String) -> Unit)
+    private val currentUserUid: String, private val deleteReviewListener: (String) -> Unit,
+    private val addLikeToReviewListener: (String) -> Unit)
     : RecyclerView.Adapter<ReviewsAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReviewsAdapter.ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.review_item, parent, false)
@@ -22,6 +24,7 @@ class ReviewsAdapter(private val reviewList: List<ReviewsList>,
         holder.korisnik.text=currentItem.korisnikid
         holder.ocena.text=currentItem.ocena.toString()
         holder.opis.text=currentItem.opis
+        holder.likeNum.text=currentItem.numOfLikes.toString()
 
         Log.d("review", "Vrednost korisnikId ${currentItem.korisnikid}" +
                 ", vrednost prosledjenog id $currentUserUid")
@@ -30,6 +33,7 @@ class ReviewsAdapter(private val reviewList: List<ReviewsList>,
         if (currentItem.korisnikid == currentUserUid) {
             holder.deleteButton.visibility = View.VISIBLE
             holder.likeButton.visibility = View.GONE
+            holder.likeNum.visibility = View.VISIBLE
             holder.deleteButton.setOnClickListener {
                 // Pozivanje funkcije za brisanje recenzije sa odgovarajućim ID-om recenzije
                 deleteReviewListener(currentItem.pid)
@@ -37,6 +41,12 @@ class ReviewsAdapter(private val reviewList: List<ReviewsList>,
         } else {
             holder.deleteButton.visibility = View.GONE
             holder.likeButton.visibility = View.VISIBLE
+            holder.likeNum.visibility = View.VISIBLE
+        }
+
+        holder.likeButton.setOnClickListener{
+            addLikeToReviewListener(currentItem.pid)
+
         }
     }
 
@@ -51,5 +61,6 @@ class ReviewsAdapter(private val reviewList: List<ReviewsList>,
         val opis: TextView = itemView.findViewById(R.id.opis)
         val deleteButton: Button = itemView.findViewById(R.id.deleteButton)
         val likeButton:ImageView = itemView.findViewById(R.id.likeImg)
+        val likeNum:TextView = itemView.findViewById(R.id.lajkNum)
     }
 }

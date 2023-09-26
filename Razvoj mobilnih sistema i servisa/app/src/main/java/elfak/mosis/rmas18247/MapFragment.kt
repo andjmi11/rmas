@@ -1,6 +1,5 @@
 package elfak.mosis.rmas18247
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -9,9 +8,9 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.net.Uri
+import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
-import android.provider.MediaStore
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
@@ -28,8 +27,7 @@ import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import coil.transform.CircleCropTransformation
+import com.google.android.gms.location.LocationListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
@@ -43,30 +41,40 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 class MapFragment : Fragment() {
 
     private lateinit var map: MapView
     private val REQUEST_PERMISSIONS_REQUEST_CODE = 1
+
     private lateinit var currentLocation: GeoPoint
+    private lateinit var currentUser: String
 
     private lateinit var firebaseAuth: FirebaseAuth
-    private lateinit var firebaseRef: DatabaseReference //za places
-    private lateinit var firebaseRef2: DatabaseReference //za reviews
+    private lateinit var firebaseRefPlaces: DatabaseReference
+    private lateinit var firebaseRefReviews: DatabaseReference
+    private lateinit var firebaseRefUsers: DatabaseReference
     private lateinit var storageRef: StorageReference
 
     private lateinit var reviewRecyclerView: RecyclerView
     private lateinit var reviewArray: ArrayList<ReviewsList>
 
+    var selectedIme: String? = null
+    var selectedPrezime: String? = null
+    var selectedTip: String? = null
+    var selectedOcena: Float = -1.0f
+    var selectedDatumOd: String? = null
+    var selectedDatumDo: String? = null
+    var selectedVremeOd: String? = null
+    var selectedVremeDo: String? = null
+    var selectedRadius: Double = 0.0
 
-    private lateinit var spinnerV : Spinner
+    private lateinit var spinnerV: Spinner
     private lateinit var spinnerList: ArrayList<String>
-    private lateinit var adapter:ArrayAdapter<String>
+    private lateinit var adapter: ArrayAdapter<String>
     private lateinit var spinnerRef: DatabaseReference
 
     override fun onCreateView(
@@ -76,10 +84,13 @@ class MapFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_map, container, false)
 
         firebaseAuth = FirebaseAuth.getInstance()
-        firebaseRef = FirebaseDatabase.getInstance().getReference("places")
-        firebaseRef2 = FirebaseDatabase.getInstance().getReference("reviews")
+        firebaseRefPlaces = FirebaseDatabase.getInstance().getReference("places")
+        firebaseRefReviews = FirebaseDatabase.getInstance().getReference("reviews")
+        firebaseRefUsers = FirebaseDatabase.getInstance().getReference("users")
         storageRef = FirebaseStorage.getInstance().getReference("placesImages")
 
+
+        currentUser = firebaseAuth.currentUser?.uid.toString()
 
         val ctx = requireContext()
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
@@ -129,7 +140,7 @@ class MapFragment : Fragment() {
         loadPlacesFromFirebase();
 
         val filter = view.findViewById<TextView>(R.id.filterButton)
-        filter.setOnClickListener{
+        filter.setOnClickListener {
             val inflater = layoutInflater
             val dialogView = inflater.inflate(R.layout.dialog_filter, null)
 
@@ -140,21 +151,23 @@ class MapFragment : Fragment() {
             spinnerV = dialogView.findViewById(R.id.kreatorSpinner)
             spinnerRef = FirebaseDatabase.getInstance().getReference("users")
             spinnerList = ArrayList<String>()
-            adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, spinnerList)
+            adapter = ArrayAdapter<String>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                spinnerList
+            )
             spinnerV.adapter = adapter
 
             showKreatori()
 
-            var selectedIme: String? = null
-            var selectedPrezime: String? = null
-            var selectedTip: String? = null
-            var selectedOcena: Float=-1.0f
-            var selectedDatumOd: String? = null
-            var selectedDatumDo: String? = null
-            var selectedVremeOd: String? = null
-            var selectedVremeDo: String? = null
+
             spinnerV.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
                     val selectedNameSurname = spinnerList[position]
 
                     val parts = selectedNameSurname.split(" ")
@@ -162,7 +175,10 @@ class MapFragment : Fragment() {
                         selectedIme = parts[0]
                         selectedPrezime = parts[1]
 
-                        Log.d("tag", "Vrednost imena $selectedIme, vrednost prezimena $selectedPrezime")
+                        Log.d(
+                            "tag",
+                            "Vrednost imena $selectedIme, vrednost prezimena $selectedPrezime"
+                        )
                         // Sada možete koristiti ime i prezime za dalje radnje
                     }
                 }
@@ -183,7 +199,12 @@ class MapFragment : Fragment() {
             tipMestaSpinner.adapter = adapterTip
             selectedTip = tipMestaSpinner.selectedItem.toString()
             tipMestaSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
                     selectedTip = adapterTip.getItem(position).toString()
                     Log.d("tag", "Odabrani tip mesta je $selectedTip")
                 }
@@ -194,8 +215,13 @@ class MapFragment : Fragment() {
             }
             val ocenaEdit = dialogView.findViewById<EditText>(R.id.ocenaEdit)
             ocenaEdit.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                   //pre promene tekst
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int
+                ) {
+                    //pre promene tekst
                 }
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -212,7 +238,37 @@ class MapFragment : Fragment() {
                             Log.e("tag", "Nije moguće pretvoriti tekst u float: $ocenaText")
                         }
                     } else {
-                       //prazno polje
+                        //prazno polje
+                    }
+                }
+            })
+
+            val radius = dialogView.findViewById<EditText>(R.id.radijus)
+            radius.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int
+                ) {
+                    //pre promene tekst
+                }
+
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    // Implementacija tokom promene teksta
+                }
+
+                override fun afterTextChanged(s: Editable?) {
+                    val radiusTxt = s.toString().trim()
+                    if (radiusTxt.isNotEmpty()) {
+                        try {
+                            selectedRadius = radiusTxt.toDouble()
+                            Log.d("tag", "Vrednost radijusa je $selectedRadius")
+                        } catch (e: NumberFormatException) {
+                            Log.e("tag", "Greska kod radijusa")
+                        }
+                    } else {
+                        //prazno polje
                     }
                 }
             })
@@ -222,22 +278,28 @@ class MapFragment : Fragment() {
             val vremeOdPicker = dialogView.findViewById<EditText>(R.id.vremeOd)
             val vremeDoPicker = dialogView.findViewById<EditText>(R.id.vremeDo)
 
-            datumOdPicker.setOnClickListener{
+            datumOdPicker.setOnClickListener {
                 showDatePickerDialog(datumOdPicker)
             }
-            datumDoPicker.setOnClickListener{
+            datumDoPicker.setOnClickListener {
                 showDatePickerDialog(datumDoPicker)
             }
-            vremeOdPicker.setOnClickListener{
+            vremeOdPicker.setOnClickListener {
                 showTimePickerDialog(vremeOdPicker)
             }
-            vremeDoPicker.setOnClickListener{
+            vremeDoPicker.setOnClickListener {
                 showTimePickerDialog(vremeDoPicker)
             }
 
             val buttonFilter = dialogView.findViewById<Button>(R.id.buttonFilter)
             buttonFilter.setOnClickListener {
-                filtering(selectedIme, selectedPrezime, selectedTip!!, selectedOcena)
+                filtering(
+                    selectedIme,
+                    selectedPrezime,
+                    selectedTip!!,
+                    selectedOcena,
+                    selectedRadius
+                )
             }
 
             alertDialog.show()
@@ -247,20 +309,88 @@ class MapFragment : Fragment() {
         return view
     }
 
-    private fun filtering(ime: String?, prezime: String?, tip: String, ocena: Float) {
+    private fun filtering(ime: String?, prezime: String?, tip: String, ocena: Float, radius: Double) {
         map.overlays.clear()
         setMyLocationOverlay()
         map.invalidate()
 
+        if (ime != null && prezime != null) { filterKreator(ime, prezime) }
+        if (ocena != -1.0f) { filterOcena(ocena) }
+        if (radius != 0.0) { getMyLocation() }
 
-        if (ime != null && prezime != null) {
-            filterKreator(ime, prezime)
+    }
+
+    private fun filterRadius(myLatitude: Double, myLongitude: Double, radius: Double) {
+        val markersToRemove = mutableListOf<Marker>()
+
+        for (overlay in map.overlays) {
+            if (overlay is Marker) {
+                val objekatLatitude = overlay.position.latitude
+                val objekatLongitude = overlay.position.longitude
+
+                val udaljenost = calculateDistance(myLatitude, myLongitude, objekatLatitude, objekatLongitude)
+
+                if (udaljenost > radius) {
+                    markersToRemove.add(overlay)
+                }
+            }
         }
 
-        if(ocena != -1.0f){
-            filterOcena(ocena)
+        // Uklonite markere koji su van radijusa
+        for (marker in markersToRemove) {
+            map.overlays.remove(marker)
+        }
+
+        map.invalidate()
+    }
+
+    private fun calculateDistance(
+        lat1: Double, lon1: Double, lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371 // Zemljin srednji radijus u km
+
+        val latDistance = Math.toRadians(lat2 - lat1)
+        val lonDistance = Math.toRadians(lon2 - lon1)
+
+        val a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + (Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)))
+
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+        return R * c // Udaljenost u km
+    }
+
+
+    private fun getMyLocation() {
+        val locationManager =
+            requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        val locationListener = android.location.LocationListener { location ->
+            val myLatitude = location.latitude
+            val myLongitude = location.longitude
+
+            // Poziv funkcije za filtriranje na osnovu radijusa
+            filterRadius(myLatitude, myLongitude, selectedRadius)
+        }
+
+
+        // Zahtevajte ažuriranje lokacije
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                0,
+                0f,
+                locationListener
+            )
         }
     }
+
+
 
 
     private fun filterOcena(ocena: Float) {
@@ -310,10 +440,7 @@ class MapFragment : Fragment() {
 
 
     private fun filterKreator(ime: String, prezime: String) {
-        val userRef = FirebaseDatabase.getInstance().getReference("users")
-        val placesRef = FirebaseDatabase.getInstance().getReference("places")
-
-        userRef.orderByChild("name").equalTo(ime)
+        firebaseRefUsers.orderByChild("name").equalTo(ime)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(userSnapshot: DataSnapshot) {
                     if (userSnapshot.exists()) {
@@ -322,7 +449,7 @@ class MapFragment : Fragment() {
                             if (userInfo?.surname == prezime) {
                                 val userId = user.key
 
-                                placesRef.orderByChild("kreatorID").equalTo(userId)
+                                firebaseRefPlaces.orderByChild("kreatorID").equalTo(userId)
                                     .addListenerForSingleValueEvent(object : ValueEventListener {
                                         override fun onDataChange(placeSnapshot: DataSnapshot) {
                                             if (placeSnapshot.exists()) {
@@ -444,7 +571,7 @@ class MapFragment : Fragment() {
     private fun setOnMapClickOverlay() {
         map.overlays.add(object : Overlay() {
             override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
-                // dobijemo geografske koordinate tačke na koju je korisnik kliknuo
+                // dobijemo geografske koordinate tacke na koju je korisnik kliknuo
                 val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
 
                 longitude = geoPoint.longitude.toDouble()
@@ -491,8 +618,42 @@ class MapFragment : Fragment() {
         })
     }
 
+    private fun addPointsForCurrentUser(d: Double, uid: String) {
+        val u:String = if(uid == "") {
+            currentUser
+        } else {
+            uid
+        }
+        firebaseRefUsers.child(u).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val user10 = snapshot.getValue(Users::class.java)
+                    if (user10 != null) {
+                        val p = user10.points + d
+                        user10.points = p
+                        snapshot.ref.setValue(user10).addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                if(uid == "") {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Dobili ste $d poena!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                TODO("Not yet implemented")
+            }
+
+        })
+
+    }
+
     private fun saveData() {
-        val uid = firebaseAuth.currentUser?.uid
 
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -500,23 +661,20 @@ class MapFragment : Fragment() {
 
 
         val place = Places(
-            naslov.toString(), mesto.toString(), "", uid.toString(),
+            naslov.toString(), mesto.toString(), "", currentUser,
             longitude, latitude, dateFormat.format(currentDate), timeFormat.format(currentDate)
         )
 
-        if (uid != null) {
-            val newPlaceRef = firebaseRef.push()
+        if (currentUser != null) {
+            val newPlaceRef = firebaseRefPlaces.push()
             val newPlaceId = newPlaceRef.key
 
             if (newPlaceId != null)
                 place.pid = newPlaceId
             newPlaceRef.setValue(place).addOnCompleteListener {
                 if (it.isSuccessful) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Uspešno unešeni podaci o mestu!",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(requireContext(), "Uspešno unešeni podaci o mestu!", Toast.LENGTH_SHORT).show()
+                    addPointsForCurrentUser(10.0, "")
                 } else {
                     Toast.makeText(
                         requireContext(),
@@ -540,8 +698,7 @@ class MapFragment : Fragment() {
     private lateinit var getOpis: String
 
     private fun loadPlacesFromFirebase() {
-        FirebaseDatabase.getInstance().getReference("places")
-            ?.addValueEventListener(object : ValueEventListener {
+            firebaseRefPlaces.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
                         for (markerSnapshot in snapshot.children) {
@@ -618,7 +775,7 @@ class MapFragment : Fragment() {
         val cl = "]"
         textNaslov.text = "$n $naslov $op $mesto $cl"
 
-        FirebaseDatabase.getInstance().getReference("users")?.child(kreator)
+        firebaseRefUsers.child(kreator)
             ?.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
@@ -638,20 +795,28 @@ class MapFragment : Fragment() {
             })
 
         submitAddReview.setOnClickListener { dialogView ->
-            val uid = firebaseAuth.currentUser?.uid
             getOcena = ocena.rating.toFloat()
             getOpis = opis.text.toString()
-            if (uid != null) {
+
+            if(getOcena != -1.0f){
+                addPointsForCurrentUser(3.0,"")
+            }
+
+            if(getOpis != ""){
+                addPointsForCurrentUser(5.0,"")
+            }
+
+            if (currentUser != null) {
                 val review = Reviews(
                     " ",
-                    uid.toString(), mestoID,
-                    getOcena.toFloat(), getOpis.toString()
+                    currentUser.toString(), mestoID,
+                    getOcena.toFloat(), getOpis.toString(), 0.0
                 )
 
                 if (review == null)
                     Toast.makeText(requireContext(), "Review je null", Toast.LENGTH_SHORT).show()
 
-                val newReviewRef = firebaseRef2.push()
+                val newReviewRef = firebaseRefReviews.push()
                 val pid = newReviewRef.key
 
                 if (pid != null) {
@@ -691,8 +856,7 @@ class MapFragment : Fragment() {
         alertDialog.show()
     }
     private fun getReviewsData(placeId: String) {
-        firebaseRef2 = FirebaseDatabase.getInstance().getReference("reviews")
-        firebaseRef2.addValueEventListener(object : ValueEventListener {
+        firebaseRefReviews.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     val userRef = FirebaseDatabase.getInstance().getReference("users")
@@ -718,7 +882,8 @@ class MapFragment : Fragment() {
                                                             reviewID.toString(),
                                                             review.ocena,
                                                             review.opis,
-                                                            " "
+                                                            " ",
+                                                            review.numOfLikes
                                                         )
                                                     )
                                                     val currentUserUid = firebaseAuth.currentUser?.uid ?: ""
@@ -729,14 +894,17 @@ class MapFragment : Fragment() {
                                                                     val cu = snapshot.getValue(Users::class.java)
                                                                     if(cu!= null){
                                                                         reviewRecyclerView.adapter =
-                                                                            ReviewsAdapter(reviewArray, cu.name + " " + cu.surname
-                                                                            ) { reviewID ->
+                                                                            ReviewsAdapter(reviewArray, cu.name + " " + cu.surname,
+                                                                             { reviewID ->
                                                                                 deleteReview(
                                                                                     reviewID
                                                                                 )
                                                                                 alertDialog.dismiss()
 
-                                                                            }
+                                                                            },{reviewID ->
+                                                                                    addLikeOnReview(reviewID)
+
+                                                                                })
                                                                     }
                                                                 }
                                                             }
@@ -770,9 +938,48 @@ class MapFragment : Fragment() {
         })
     }
 
+    private fun addLikeOnReview(reviewID: String) {
+        val reviewsRef = FirebaseDatabase.getInstance().getReference("reviews")
+
+        reviewsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (reviewSnapshot in snapshot.children) {
+                        val revInfo = reviewSnapshot.getValue(Reviews::class.java)
+                        if (revInfo != null && revInfo.pid == reviewID) {
+                            val likes = revInfo.numOfLikes + 1 // Povećaj broj lajkova za 1
+                            val korisnik = revInfo.korisnikid
+
+                            // Ažuriraj broj lajkova u objektu Reviews
+                            revInfo.numOfLikes = likes
+
+                            // Postavi ažurirani objekat Reviews nazad u bazu podataka
+                            reviewSnapshot.ref.setValue(revInfo)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        Toast.makeText(requireContext(), "Lajkovali ste recenziju",
+                                            Toast.LENGTH_SHORT).show()
+                                        addPointsForCurrentUser(1.0, korisnik)
+                                    } else {
+                                        // Neuspešno ažurirano
+                                        // Ovde možete obraditi grešku ako je potrebno
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Obrada greške ako je potrebno
+            }
+        })
+    }
+
+
 
     private fun deleteReview(reviewID: String) {
-        val reviewRef = firebaseRef2.child(reviewID)
+        val reviewRef = firebaseRefReviews.child(reviewID)
 
         reviewRef.removeValue().addOnCompleteListener { task ->
             if (task.isSuccessful) {

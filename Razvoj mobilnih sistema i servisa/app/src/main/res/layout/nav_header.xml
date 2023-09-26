@@ -19,12 +19,14 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/emailTextView"/>
+        android:id="@+id/profileEmail"
+        android:text="Ime:"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/nameTextView"/>
+        android:id="@+id/profileUserName"
+        android:text="Prezime:"/>
 
 
 

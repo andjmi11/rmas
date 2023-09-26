@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
@@ -23,12 +24,14 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import elfak.mosis.rmas18247.databinding.ActivityMainBinding
+import org.w3c.dom.Text
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerLayout: DrawerLayout
 
     private lateinit var firebaseAuth: FirebaseAuth
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,15 +51,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
+
+
         if(savedInstanceState == null){
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, MapFragment()).commit()
             navigationView.setCheckedItem(R.id.nav_map)
 
         }
-        firebaseAuth = FirebaseAuth.getInstance()
-
-        getData()
 
 
     }
@@ -64,13 +66,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            R.id.nav_map -> {
-                supportFragmentManager.beginTransaction()
+            R.id.nav_profile -> supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, ProfileFragment()).commit()
+            R.id.nav_map -> supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, MapFragment()).commit()
-                getData()
-            }
             R.id.nav_places -> supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, PlaceFragment()).commit()
+            R.id.nav_rank -> supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, RangFragment()).commit()
             R.id.nav_logout -> logoutMenu(this)
         }
         drawerLayout.closeDrawer(GravityCompat.START)
@@ -84,99 +87,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             onBackPressedDispatcher.onBackPressed()
         }
     }
-
-    private fun getData() {
-        val currentUser = firebaseAuth.currentUser
-
-        if(currentUser != null) {
-            val uid = currentUser.uid
-            //prijavljen korisnik
-
-            FirebaseDatabase.getInstance().getReference("users")?.child(uid)
-                ?.addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            val user = snapshot.getValue(Users::class.java)
-                            if (user != null) {
-                                val email = user.email
-                                val name = user.name
-                                val surname = user.surname
-                                val phone = user.phone
-                                val profileImageUriString = user.imgUrl
-
-                                val profileImageUri = Uri.parse(profileImageUriString)
-                                if(profileImageUri == null){
-                                    val message ="Nema uri slike"
-                                    showErrorMessage(message)
-                                }
-                               val emailTextView = findViewById<TextView>(R.id.emailTextView)
-                                val nameTextView = findViewById<TextView>(R.id.nameTextView)
-                                val profileImageView = findViewById<ImageView>(R.id.profileImageView)
-
-
-                                emailTextView.text = "Email: $email"
-                                nameTextView.text = "Name: $name"
-
-                                profileImageView.load(profileImageUri) {
-                                    crossfade(true)
-                                    crossfade(1000)
-                                    transformations(CircleCropTransformation())
-                                }
-
-
-
-
-                            }
-                        }
-                    }
-                    override fun onCancelled(error: DatabaseError) {
-                        when (error.code) {
-                            DatabaseError.PERMISSION_DENIED -> {
-                                // Korisnik nema dozvolu za pristup podacima
-                                val message = "Nemate dozvolu za pristup podacima. Molimo, kontaktirajte podršku."
-                                showErrorMessage(message)
-                            }
-                            DatabaseError.NETWORK_ERROR -> {
-                                // Problemi sa internet vezom prilikom dohvatanja podataka
-                                val message = "Problemi sa internet vezom. Proverite svoju internet konekciju i pokušajte ponovo."
-                                showErrorMessage(message)
-                            }
-                            else -> {
-                                // Nepoznata greška
-                                val message = "Došlo je do nepoznate greške. Pokušajte ponovo kasnije."
-                                showErrorMessage(message)
-                            }
-                        }
-                    }
-
-
-                })
-        }else{
-            Toast.makeText(this, "Current user je null", Toast.LENGTH_SHORT).show()
-        }
-
-    }
-
-    private fun showErrorMessage(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Greška")
-        builder.setMessage(message)
-        builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-   /* fun clickMenu(view: View) {
-        openDrawer(drawerLayout)
-    }
-
-    private fun openDrawer(drawerLayout: DrawerLayout) {
-        drawerLayout.openDrawer(GravityCompat.START)
-    }
-
-    fun logout(view: View) {
-        logoutMenu(this@MainActivity)
-    }*/
 
     private fun logoutMenu(mainActivity: MainActivity) {
         val builder = AlertDialog.Builder(mainActivity)

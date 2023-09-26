@@ -7,5 +7,6 @@ data class ReviewsList(
     val pid:String=" ",
     val ocena:Float=0.0f,
     val opis: String="",
-    val mestoID: String=""
+    val mestoID: String="",
+    var numOfLikes: Double=0.0
 )
