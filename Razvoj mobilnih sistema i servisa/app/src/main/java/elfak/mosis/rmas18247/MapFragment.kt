@@ -1257,17 +1257,7 @@ class MapFragment : Fragment() {
             )
         }
     }
-
-    inner class CustomInfoWindow(mapView: MapView, marker: Marker) : InfoWindow(R.layout.info_window_layout, mapView) {
-        override fun onOpen(item: Any?) {
-            // Postavite tekst u TextView iz layout-a
-            val infoTextView = view.findViewById<TextView>(R.id.info_text)
-            infoTextView.text = "Poseti me!"
-        }
-
-        override fun onClose() {
-        }
-    }
+    
 
 
 }
