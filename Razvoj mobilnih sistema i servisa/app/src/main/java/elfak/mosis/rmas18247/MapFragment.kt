@@ -278,6 +278,7 @@ class MapFragment : Fragment() {
 
             val buttonFilter = dialogView.findViewById<Button>(R.id.buttonFilter)
             buttonFilter.setOnClickListener {
+
                 filtering()
             }
 
@@ -307,7 +308,9 @@ class MapFragment : Fragment() {
             setMyLocationOverlay()
             map.invalidate()
             filterOcena(selectedOcena) }
+
         if (selectedRadius != 0.0) {
+            Log.d("tag", "Usao sam")
             getMyLocation()
         }
         if(selectedVremeOd!="" && selectedVremeDo!=""){
@@ -447,6 +450,7 @@ class MapFragment : Fragment() {
     }
 
     private fun filterRadius(myLatitude: Double, myLongitude: Double, radius: Double) {
+
         firebaseRefPlaces.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(placesSnapshot: DataSnapshot) {
                 if (placesSnapshot.exists()) {
@@ -462,7 +466,7 @@ class MapFragment : Fragment() {
                                 objekatLatitude,
                                 objekatLongitude
                             )
-
+                            Log.d("tag", "Vrednost $udaljenost")
                             if (udaljenost <= radius) {
                                 val geoPoint = GeoPoint(placeInfo.latitude, placeInfo.longitude)
                                 val noviNaslov = placeInfo.naslov
@@ -511,29 +515,23 @@ class MapFragment : Fragment() {
     }
 
 
+    private  var myLatitude:Double=0.0
+    private  var myLongitude:Double=0.0
     private fun getMyLocation() {
-        val locationManager =
-            requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+       val myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), map)
+        myLocationOverlay.enableMyLocation()
 
-        val locationListener = android.location.LocationListener { location ->
-            val myLatitude = location.latitude
-            val myLongitude = location.longitude
+        myLocationOverlay.enableFollowLocation()
 
-            filterRadius(myLatitude, myLongitude, selectedRadius)
+        myLocationOverlay.runOnFirstFix {
+            val location = myLocationOverlay.myLocation
+            if (location != null) {
+                currentLocation = GeoPoint(location.latitude, location.longitude)
+            }
         }
+        filterRadius(currentLocation.latitude, currentLocation.longitude, selectedRadius)
 
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                0,
-                0f,
-                locationListener
-            )
-        }
+
     }
 
     private fun filterOcena(ocena: Float) {
@@ -715,68 +713,81 @@ class MapFragment : Fragment() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            // menadzer za dobijanje lokacije
-            val locationManager =
-                requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(requireContext()), map)
+            myLocationOverlay.enableMyLocation()
 
-            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if (location != null) {
-                val myLatitude = location.latitude
-                val myLongitude = location.longitude
+            myLocationOverlay.enableFollowLocation()
 
-                map.overlays.add(object : Overlay() {
-                    override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
-                        // dobijemo geografske koordinate tacke na koju je korisnik kliknuo
-                        val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
+            myLocationOverlay.runOnFirstFix {
+                val location = myLocationOverlay.myLocation
+                if (location != null) {
+                    currentLocation = GeoPoint(location.latitude, location.longitude)
 
-                        longitude = geoPoint.longitude.toDouble()
-                        latitude = geoPoint.latitude.toDouble()
+                    map.overlays.add(object : Overlay() {
+                        override fun onSingleTapConfirmed(
+                            e: MotionEvent,
+                            mapView: MapView
+                        ): Boolean {
+                            // dobijemo geografske koordinate tacke na koju je korisnik kliknuo
+                            val geoPoint = mapView.projection.fromPixels(e.x.toInt(), e.y.toInt())
 
-                        val distance = calculateDistance(myLatitude, myLongitude, geoPoint.latitude, geoPoint.longitude)
+                            longitude = geoPoint.longitude.toDouble()
+                            latitude = geoPoint.latitude.toDouble()
 
-                        val maxDistanceMeters = 0.1
-                     //   if (distance <= maxDistanceMeters) {
-                          //  najbliziMarker(myLatitude, myLongitude)
-                            //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
-                            val inflater = requireActivity().layoutInflater
-                            val dialogView = inflater.inflate(R.layout.dialog_newplace, null)
+                            val distance = calculateDistance(
+                                currentLocation.latitude,
+                                currentLocation.longitude,
+                                geoPoint.latitude,
+                                geoPoint.longitude
+                            )
 
-                            val alertDialogBuilder = AlertDialog.Builder(requireContext())
-                            alertDialogBuilder.setView(dialogView)
+                            val maxDistanceMeters = 0.1
+                            if (distance <= maxDistanceMeters) {
+                                //  najbliziMarker(myLatitude, myLongitude)
+                                //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
+                                val inflater = requireActivity().layoutInflater
+                                val dialogView = inflater.inflate(R.layout.dialog_newplace, null)
 
-
-                            val imeMestaEditText =
-                                dialogView.findViewById<EditText>(R.id.imeMestaEditText)
-                            val tipMestaSpinner =
-                                dialogView.findViewById<Spinner>(R.id.tipMestaSpinner)
-
-
-                            val adapter = ArrayAdapter.createFromResource(requireContext(), R.array.opcije_mesta, android.R.layout.simple_spinner_item)
-                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                            tipMestaSpinner.adapter = adapter
-
-                            AlertDialog.Builder(requireContext())
-                                .setView(dialogView)
-                                .setTitle("Unos mesta")
-                                .setPositiveButton(
-                                    "Potvrdi",
-                                    DialogInterface.OnClickListener { dialog, which ->
-                                        naslov = imeMestaEditText.text.toString()
-                                        mesto = tipMestaSpinner.selectedItem.toString()
-                                        saveData()
-                                    })
-                                .setNegativeButton("Otkaži", null)
-                                .create()
-                                .show()
+                                val alertDialogBuilder = AlertDialog.Builder(requireContext())
+                                alertDialogBuilder.setView(dialogView)
 
 
-                            return true
-                     /*   }
-                        else{
-                            return false
-                        }*/
-                    }
-                })
+                                val imeMestaEditText =
+                                    dialogView.findViewById<EditText>(R.id.imeMestaEditText)
+                                val tipMestaSpinner =
+                                    dialogView.findViewById<Spinner>(R.id.tipMestaSpinner)
+
+
+                                val adapter = ArrayAdapter.createFromResource(
+                                    requireContext(),
+                                    R.array.opcije_mesta,
+                                    android.R.layout.simple_spinner_item
+                                )
+                                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                                tipMestaSpinner.adapter = adapter
+
+                                AlertDialog.Builder(requireContext())
+                                    .setView(dialogView)
+                                    .setTitle("Unos mesta")
+                                    .setPositiveButton(
+                                        "Potvrdi",
+                                        DialogInterface.OnClickListener { dialog, which ->
+                                            naslov = imeMestaEditText.text.toString()
+                                            mesto = tipMestaSpinner.selectedItem.toString()
+                                            saveData()
+                                        })
+                                    .setNegativeButton("Otkaži", null)
+                                    .create()
+                                    .show()
+
+
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                    })
+                }
             }
         }
     }
