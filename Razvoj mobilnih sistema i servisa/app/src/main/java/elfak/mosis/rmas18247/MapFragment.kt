@@ -56,7 +56,6 @@ class MapFragment : Fragment() {
     private lateinit var firebaseRefPlaces: DatabaseReference
     private lateinit var firebaseRefReviews: DatabaseReference
     private lateinit var firebaseRefUsers: DatabaseReference
-    private lateinit var storageRef: StorageReference
 
     private lateinit var reviewRecyclerView: RecyclerView
     private lateinit var reviewArray: ArrayList<ReviewsList>
@@ -70,7 +69,6 @@ class MapFragment : Fragment() {
     var selectedVremeOd: String? = null
     var selectedVremeDo: String? = null
     var selectedRadius: Double = 0.0
-    var selectedPoslInterakcija: Boolean = false
 
     private lateinit var spinnerV: Spinner
     private lateinit var spinnerList: ArrayList<String>
@@ -333,7 +331,7 @@ class MapFragment : Fragment() {
         }*/
     }
 
-    private fun filterLastInteraction() {
+   /* private fun filterLastInteraction() {
         val trenutnoVremeString = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
         val upit = firebaseRefPlaces.orderByChild("lastInteraction")
 
@@ -386,7 +384,7 @@ class MapFragment : Fragment() {
         val date1 = dateFormat.parse(vreme1)
         val date2 = dateFormat.parse(vreme2)
         return Math.abs(date1.time - date2.time)
-    }
+    }*/
 
     private fun filterVremeDatum(from: String, to: String,dateOrTIme: String) {
         val query = firebaseRefPlaces.orderByChild(dateOrTIme).startAt(from).endAt(to)
@@ -737,7 +735,7 @@ class MapFragment : Fragment() {
                         val distance = calculateDistance(myLatitude, myLongitude, geoPoint.latitude, geoPoint.longitude)
 
                         val maxDistanceMeters = 0.1
-                        if (distance <= maxDistanceMeters) {
+                     //   if (distance <= maxDistanceMeters) {
                           //  najbliziMarker(myLatitude, myLongitude)
                             //pre nego kreiram marker, otvaram dijalog za unos podataka o mestu
                             val inflater = requireActivity().layoutInflater
@@ -773,10 +771,10 @@ class MapFragment : Fragment() {
 
 
                             return true
-                        }
+                     /*   }
                         else{
                             return false
-                        }
+                        }*/
                     }
                 })
             }
@@ -823,7 +821,7 @@ class MapFragment : Fragment() {
 
         val place = Places(
             naslov.toString(), mesto.toString(), "", currentUser,
-            longitude, latitude, dateFormat.format(currentDate), timeFormat.format(currentDate), timeFormat.format(currentDate)
+            longitude, latitude, dateFormat.format(currentDate),timeFormat.format(currentDate)
         )
 
         if (currentUser != null) {
@@ -1257,7 +1255,7 @@ class MapFragment : Fragment() {
             )
         }
     }
-    
+
 
 
 }

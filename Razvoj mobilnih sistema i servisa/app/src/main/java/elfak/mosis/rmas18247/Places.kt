@@ -9,5 +9,4 @@ data class Places(
     var latitude: Double=0.0,
     var dateCreated: String="",
     var timeCreated : String="",
-    var lastInteraction: String=""
     )

@@ -12,9 +12,12 @@ import android.view.ViewGroup
 import android.widget.*
 import coil.load
 import coil.transform.CircleCropTransformation
+import com.bumptech.glide.Glide
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
 
 
 class ProfileFragment : Fragment() {
@@ -102,7 +105,7 @@ class ProfileFragment : Fragment() {
                             surnameTextView.text = "Prezime: ${user.surname}"
                             phoneTextView.text = "Telefon: ${user.phone}"
                             pointsTextView.text = "Broj poena: ${user.points}"
-                            val profileImageUriString = user.imgUrl
+                             val profileImageUriString = user.imgUrl
 
                             val profileImageUri = Uri.parse(profileImageUriString)
 
@@ -113,6 +116,7 @@ class ProfileFragment : Fragment() {
                                 crossfade(1000)
                                 transformations(CircleCropTransformation())
                             }
+
                         }
                     }
                 }
